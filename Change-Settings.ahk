@@ -6,7 +6,7 @@ defaultDict := controlDict.Clone()
 path := A_ScriptDir "\config.cfg"
 
 ;Notes
-notes := "Make sure camera lock is dead center. `nOptions > Game > Camera Lock Mode > Fixed Offset`n`n"
+notes := "Attack Move = Attack Move Only Click.`nMost likely you will need to bind this ingame.`n`n"
 Gui add, text,, %notes%
 
 ;Create GUI
