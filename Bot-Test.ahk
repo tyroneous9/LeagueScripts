@@ -22,7 +22,7 @@ global ACTIVE_RANGE := 615
 
 RunGame() {
 	static loaded := false
-	if (!WinActive(GAME_PROCESS)) { ;Run client when not ingame
+	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
 		RunClient()
 		return
 	} else if (loaded == false) {

@@ -11,9 +11,8 @@
 LoadScript()
 ;Constants
 global MAX_ORDER := ["r", "q", "w", "e"]
-global CAST_ORDER := [SPELL_4, SPELL_3, SPELL_2, SPELL_1]
+global CAST_ORDER := [SPELL_4, SPELL_3, SPELL_2, SPELL_1, SUM_1, SUM_2]
 global ACTIVE_RANGE := 615
-global ALLY_MAIN := SELECT_ALLY_ARR[4] ;bot lane ally
 
 /*
 -------------------------------
@@ -23,9 +22,8 @@ global ALLY_MAIN := SELECT_ALLY_ARR[4] ;bot lane ally
 
 RunGame() {
 	static loaded := false
-	if (!WinActive(GAME_PROCESS)) { ;Run client when not ingame
+	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
 		RunClient()
-		
 		return
 	} else if (loaded == false) {
 		while(!FindPlayerXY()) {
@@ -33,8 +31,11 @@ RunGame() {
 		}
 		loaded := True
 		BuyRecommended()
-		LevelUpSingle(MAX_ORDER[4])
+		LevelUp(MAX_ORDER) 
 	}	
+	
+	;Look for surrender
+	Surrender()
 
 	;Shop phase
 	if (IsDead()) {
@@ -43,43 +44,46 @@ RunGame() {
 	}
 
 	; Combat
-	Send {%ALLY_MAIN%}
+	static AllyCurrent := 0
+	; determine ally presence
+	Send {%AllyCurrent%}
 	Sleep 10
 	AllyPosXY := FindAllyXY()
 	if (AllyPosXY) {
+		; determine enemy presence
 		if (EnemyPosXY := FindEnemyXY()) {
+			; determine enemy proximity
 			Send {%CENTER_CAMERA% down}
 			Sleep 10
 			if (EnemyPosXY := FindEnemyXY()) {
 				EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
+				; attack if close, retreat if too close
 				if (EnemyDistance < ACTIVE_RANGE) {
 					AttackEnemy(CAST_ORDER)
 					Retreat(200)
-					if (EnemyDistance < (ACTIVE_RANGE >> 1)) {
+					if (EnemyDistance < (ACTIVE_RANGE >> 2)) {
 						Retreat(2000)
 						Send {%SUM_1%}{%SUM_2%}
 					}
 				}
 			}
 			Send {%CENTER_CAMERA% up}
-			FollowAlly(ALLY_MAIN, 150)
+			FollowAlly(AllyCurrent, 150)
 		} else {
-			FollowAlly(ALLY_MAIN, 300)
+			FollowAlly(AllyCurrent, 300)
 		}
 		AttackMove(400)
-	} else {
-		; play safe without ally, then recall
-		if (EnemyPosXY := FindEnemyXY()) {
-			Retreat(2000)
-		}
-		Recall()
+	} else { ; look for different ally
+		Random, num, 1, 4
+		AllyCurrent := SELECT_ALLY_ARR[num]
+		FollowAlly(AllyCurrent, 300)
 	}
 }
 
 RunTest() {
 	StartTime := A_TickCount
 
-	
+	BuyRecommended()
 
 	;MsgBox % A_TickCount - StartTime " milliseconds have elapsed."
 }
