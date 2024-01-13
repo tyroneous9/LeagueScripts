@@ -123,7 +123,7 @@ BuyList(ByRef ITEM_LIST) {
     Sleep 500
 }
 
-;buy the middle recommended item
+;buy the middle recommended item, offset to the right
 BuyRecommended() {
     Send {%SHOP%}
     Sleep 500
@@ -134,7 +134,7 @@ BuyRecommended() {
     Click left
     Sleep 500
     Mousemove ShopFlag[1], ShopFlag[2]
-    MouseRelativeMove(12, -20)
+    MouseRelativeMove(17, -20)
     loop 5 {
         Click Right down
         Sleep 200

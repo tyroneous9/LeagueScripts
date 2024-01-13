@@ -46,10 +46,8 @@ RunGame() {
 	; Combat
 	static AllyCurrent := 0
 	; determine ally presence
-	Send {%AllyCurrent%}
-	Sleep 10
 	AllyPosXY := FindAllyXY()
-	if (AllyPosXY) {
+	if (AllyPosXY) { ; ally
 		; determine enemy presence
 		if (EnemyPosXY := FindEnemyXY()) {
 			; determine enemy proximity
@@ -62,22 +60,22 @@ RunGame() {
 					AttackEnemy(CAST_ORDER)
 					Retreat(200)
 					if (EnemyDistance < (ACTIVE_RANGE >> 2)) {
-						Retreat(2000)
+						Retreat(1500)
 						Send {%SUM_1%}{%SUM_2%}
 					}
 				}
 			}
 			Send {%CENTER_CAMERA% up}
-			FollowAlly(AllyCurrent, 150)
-		} else {
-			FollowAlly(AllyCurrent, 300)
+		} else { ; ally no enemy
+			Random, num, 1, 4
+			AllyCurrent := SELECT_ALLY_ARR[num]
 		}
 		AttackMove(400)
-	} else { ; look for different ally
+	} else { ; no ally no enemy
 		Random, num, 1, 4
 		AllyCurrent := SELECT_ALLY_ARR[num]
-		FollowAlly(AllyCurrent, 300)
 	}
+	FollowAlly(AllyCurrent, 250)
 }
 
 RunTest() {
