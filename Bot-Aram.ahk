@@ -52,7 +52,7 @@ RunGame() {
 		if (EnemyPosXY := FindEnemyXY()) {
 			; determine enemy proximity
 			Send {%CENTER_CAMERA% down}
-			Sleep 10
+			Sleep 50
 			if (EnemyPosXY := FindEnemyXY()) {
 				EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
 				; attack if close, retreat if too close
