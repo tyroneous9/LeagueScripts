@@ -52,15 +52,13 @@ RunGame() {
 		if (EnemyPosXY := FindEnemyXY()) {
 			; determine enemy proximity
 			Send {%CENTER_CAMERA% down}
-			Sleep 50
 			if (EnemyPosXY := FindEnemyXY()) {
 				EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
 				; attack if close, retreat if too close
 				if (EnemyDistance < ACTIVE_RANGE) {
 					AttackEnemy(CAST_ORDER)
-					Retreat(200)
 					if (EnemyDistance < (ACTIVE_RANGE >> 2)) {
-						Retreat(1500)
+						Retreat(1024)
 						Send {%SUM_1%}{%SUM_2%}
 					}
 				}
@@ -70,12 +68,11 @@ RunGame() {
 			Random, num, 1, 4
 			AllyCurrent := SELECT_ALLY_ARR[num]
 		}
-		AttackMove(400)
 	} else { ; no ally no enemy
 		Random, num, 1, 4
 		AllyCurrent := SELECT_ALLY_ARR[num]
 	}
-	FollowAlly(AllyCurrent, 250)
+	FollowAlly(AllyCurrent, 256)
 }
 
 RunTest() {
