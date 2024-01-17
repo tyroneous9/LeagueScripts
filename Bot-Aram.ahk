@@ -21,6 +21,7 @@ global ACTIVE_RANGE := 615
 */
 
 RunGame() {
+	;Run client w/ initial load
 	static loaded := false
 	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
 		RunClient()
@@ -34,10 +35,10 @@ RunGame() {
 		LevelUp(MAX_ORDER) 
 	}	
 	
-	;Look for surrender
+	; Look for surrender
 	Surrender()
 
-	;Shop phase
+	; Shop/level
 	if (IsDead()) {
 		BuyRecommended()
 		LevelUp(MAX_ORDER) 
@@ -54,13 +55,9 @@ RunGame() {
 			Send {%CENTER_CAMERA% down}
 			if (EnemyPosXY := FindEnemyXY()) {
 				EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
-				; attack if close, retreat if too close
+				; attack if close
 				if (EnemyDistance < ACTIVE_RANGE) {
 					AttackEnemy(CAST_ORDER)
-					if (EnemyDistance < (ACTIVE_RANGE >> 2)) {
-						Retreat(1024)
-						Send {%SUM_1%}{%SUM_2%}
-					}
 				}
 			}
 			Send {%CENTER_CAMERA% up}

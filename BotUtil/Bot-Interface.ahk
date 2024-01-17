@@ -21,8 +21,9 @@ global ACTIVE_RANGE := 0
 */
 
 RunGame() {
+	;Run client w/ initial load
 	static loaded := false
-	if (!WinActive(GAME_PROCESS)) { ;Run client when not ingame
+	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
 		RunClient()
 		return
 	} else if (loaded == false) {
@@ -30,16 +31,17 @@ RunGame() {
 			Sleep 1000
 		}
 		loaded := True
-		
+		BuyRecommended()
+		LevelUp(MAX_ORDER) 
 	}	
-
+	
 	; Shop/level
 	if () {
 		BuyRecommended()
 		LevelUp(MAX_ORDER) 
 	}
 
-	; check proximity
+	; Combat
 	if (EnemyPosXY := FindEnemyXY()) {
 		Send {%CENTER_CAMERA% down}
 		if (EnemyPosXY := FindEnemyXY()) {
