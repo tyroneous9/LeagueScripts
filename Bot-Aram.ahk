@@ -24,6 +24,9 @@ RunGame() {
 	;Run client w/ initial load
 	static loaded := false
 	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
+		if (loaded == true) {
+			Sleep 20000
+		}
 		RunClient()
 		return
 	} else if (loaded == false) {
