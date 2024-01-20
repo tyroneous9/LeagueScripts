@@ -12,7 +12,7 @@ LoadScript()
 ;Constants
 global MAX_ORDER := ["r", "q", "w", "e"]
 global CAST_ORDER := [SPELL_4, SPELL_3, SPELL_2, SPELL_1, SUM_1, SUM_2]
-global ACTIVE_RANGE := 615
+global ACTIVE_RANGE := 600
 
 /*
 -------------------------------
@@ -53,22 +53,16 @@ RunGame() {
 	; determine ally presence
 	AllyPosXY := FindAllyXY()
 	if (AllyPosXY) { ; ally
-		; determine enemy presence
+		; determine enemy proximity
+		Send {%CENTER_CAMERA% down}
 		if (EnemyPosXY := FindEnemyXY()) {
-			; determine enemy proximity
-			Send {%CENTER_CAMERA% down}
-			if (EnemyPosXY := FindEnemyXY()) {
-				EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
-				; attack if close
-				if (EnemyDistance < ACTIVE_RANGE) {
-					AttackEnemy(CAST_ORDER)
-				}
+			EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
+			; attack if close
+			if (EnemyDistance < ACTIVE_RANGE) {
+				AttackEnemy(CAST_ORDER)
 			}
-			Send {%CENTER_CAMERA% up}
-		} else { ; ally no enemy
-			Random, num, 1, 4
-			AllyCurrent := SELECT_ALLY_ARR[num]
 		}
+		Send {%CENTER_CAMERA% up}
 	} else { ; no ally no enemy
 		Random, num, 1, 4
 		AllyCurrent := SELECT_ALLY_ARR[num]
@@ -78,8 +72,6 @@ RunGame() {
 
 RunTest() {
 	StartTime := A_TickCount
-
-	BuyRecommended()
 
 	;MsgBox % A_TickCount - StartTime " milliseconds have elapsed."
 }
