@@ -23,6 +23,10 @@ global ACTIVE_RANGE := 615
 RunGame() {
 	static loaded := false
 	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
+		if (loaded == true) {
+			Sleep 20000
+			loaded := false
+		}
 		RunClient()
 		return
 	} else if (loaded == false) {
@@ -32,7 +36,7 @@ RunGame() {
 		loaded := True
 		BuyRecommended()
 		LevelUp(MAX_ORDER) 
-	}	
+	}
 
 	;Shop phase
 	if (IsDead()) {

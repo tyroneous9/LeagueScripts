@@ -26,6 +26,7 @@ RunGame() {
 	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
 		if (loaded == true) {
 			Sleep 20000
+			loaded := false
 		}
 		RunClient()
 		return

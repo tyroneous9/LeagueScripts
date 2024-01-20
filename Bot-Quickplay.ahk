@@ -24,8 +24,11 @@ global ALLY_MAIN := SELECT_ALLY_ARR[4] ;bot lane ally
 RunGame() {
 	static loaded := false
 	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
+		if (loaded == true) {
+			Sleep 20000
+			loaded := false
+		}
 		RunClient()
-		
 		return
 	} else if (loaded == false) {
 		while(!FindPlayerXY()) {
@@ -33,7 +36,7 @@ RunGame() {
 		}
 		loaded := True
 		BuyRecommended()
-		LevelUpSingle(MAX_ORDER[4])
+		LevelUpSingle(MAX_ORDER[4]) 
 	}	
 
 	;Shop phase
