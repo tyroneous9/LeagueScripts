@@ -55,17 +55,23 @@ RunGame() {
 	if (AllyPosXY) { ; ally
 		; determine enemy proximity
 		Send {%CENTER_CAMERA% down}
+		Sleep 20
 		if (EnemyPosXY := FindEnemyXY()) {
 			EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
 			; attack if close
 			if (EnemyDistance < ACTIVE_RANGE) {
 				AttackEnemy(CAST_ORDER)
 			}
+		} else { ; look for ally
+			Random, num, 1, 4
+			AllyCurrent := SELECT_ALLY_ARR[num]
+			Sleep 100
 		}
 		Send {%CENTER_CAMERA% up}
-	} else { ; no ally no enemy
+	} else { ; look for ally
 		Random, num, 1, 4
 		AllyCurrent := SELECT_ALLY_ARR[num]
+		Sleep 100
 	}
 	FollowAlly(AllyCurrent, 256)
 }
