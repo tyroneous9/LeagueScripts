@@ -11,7 +11,7 @@
 LoadScript()
 ;Constants
 global MAX_ORDER := ["r", "q", "w", "e"]
-global CAST_ORDER := [SPELL_4, SPELL_3, SPELL_2, SPELL_1, SUM_1, SUM_2]
+global CAST_ORDER := [SPELL_4, SPELL_3, SPELL_2, SPELL_1]
 global ACTIVE_RANGE := 600
 
 /*
@@ -71,7 +71,7 @@ RunGame() {
 	} else { ; look for ally
 		Random, num, 1, 4
 		AllyCurrent := SELECT_ALLY_ARR[num]
-		Sleep 100
+		Sleep 250
 	}
 	FollowAlly(AllyCurrent, 256)
 }
