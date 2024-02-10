@@ -55,7 +55,7 @@ RunGame() {
 	if (AllyPosXY) { ; ally
 		; determine enemy proximity
 		Send {%CENTER_CAMERA% down}
-		Sleep 20
+		Sleep 10
 		if (EnemyPosXY := FindEnemyXY()) {
 			EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
 			; attack if close
