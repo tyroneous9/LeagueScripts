@@ -21,22 +21,9 @@ global ACTIVE_RANGE := 500
 */
 
 RunGame() {
-	;Run client w/ initial load
-	static loaded := false
 	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
-		if (loaded == true) {
-			Sleep 20000
-			loaded := false
-		}
 		RunClient()
 		return
-	} else if (loaded == false) {
-		while(!FindPlayerXY()) {
-			Sleep 1000
-		}
-		loaded := True
-		BuyRecommended()
-		LevelUp(MAX_ORDER) 
 	}	
 	
 	; Look for surrender
