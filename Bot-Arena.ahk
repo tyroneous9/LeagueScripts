@@ -35,6 +35,7 @@ RunGame() {
 		Send {%SHOP%}
 		Sleep 1000
 		BuyLegendaryAnvil()
+		BuyLegendaryAnvil()
 		LevelUp(MAX_ORDER) 
 	}
 
