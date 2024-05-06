@@ -128,6 +128,7 @@ BuyRecommended() {
     Send {%SHOP%}
     Sleep 500
     ShopFlag := ShopOpen()
+    ;shopflag = sell button
     Mousemove ShopFlag[1], ShopFlag[2]
     Sleep 500
     MouseRelativeMove(0, -62)
@@ -135,6 +136,32 @@ BuyRecommended() {
     Sleep 500
     Mousemove ShopFlag[1], ShopFlag[2]
     MouseRelativeMove(17, -20)
+    loop 5 {
+        Click Right down
+        Sleep 200
+        Click Right up
+    }
+    Sleep 500
+    Send {%SHOP%}
+    Sleep 500
+}
+
+;buy legendary anvil (ARENA ONLY)
+BuyLegendaryAnvil() {
+    Send {%SHOP%}
+    Sleep 500
+    ShopFlag := ShopOpen()
+    ;shopflag = sell button
+    Mousemove ShopFlag[1], ShopFlag[2]
+    ;660,880 flag
+    ;950,210 all items
+    ;990,630
+    Sleep 500
+    MouseRelativeMove(14, -62)
+    Click left
+    Sleep 500
+    Mousemove ShopFlag[1], ShopFlag[2]
+    MouseRelativeMove(5, -25)
     loop 5 {
         Click Right down
         Sleep 200
