@@ -151,11 +151,7 @@ BuyLegendaryAnvil() {
     Send {%SHOP%}
     Sleep 500
     ShopFlag := ShopOpen()
-    ;shopflag = sell button
     Mousemove ShopFlag[1], ShopFlag[2]
-    ;660,880 flag
-    ;950,210 all items
-    ;990,630
     Sleep 500
     MouseRelativeMove(14, -62)
     Click left
@@ -235,4 +231,36 @@ Recall() {
         }
     }
     return false
+}
+
+/*
+-------------------------------
+            Testing
+-------------------------------
+*/
+
+; prints user keybindings
+PrintKeys() {
+    infile := FileOpen(A_ScriptDir "\config.cfg", "r")
+    if (!infile)
+    {
+        MsgBox, Error reading config file.
+        return
+    }
+    configFileContent := infile.read()
+    infile.Close()
+
+    msgbox % configFileContent
+}
+
+PrintMetaData() {
+    constants .= "Client Process: " . CLIENT_PROCESS . "`n"
+    constants .= "Game Process: " . GAME_PROCESS . "`n"
+    constants .= "Screen Center: " . SCREEN_CENTER . "`n"
+    msgbox % constants
+}
+
+; moves mouse in various contexts
+TestMouseMove() {
+
 }

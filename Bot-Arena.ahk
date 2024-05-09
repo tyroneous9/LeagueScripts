@@ -77,7 +77,9 @@ RunGame() {
 RunTest() {
 	
 
-	BuyLegendaryAnvil()
+	Mousemove 500, 500
+	sleep 1000
+	mousemove 0, 0
 	
 
 }

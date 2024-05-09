@@ -85,15 +85,3 @@ LoadScript() {
     GAME_PROCESS := "League of Legends (TM) Client"
 }
 
-PrintKeys() {
-    infile := FileOpen(A_ScriptDir "\config.cfg", "r")
-    if (!infile)
-    {
-        MsgBox, Error reading config file.
-        return
-    }
-    configFileContent := infile.read()
-    infile.Close()
-
-    msgbox % configFileContent
-}
