@@ -34,8 +34,9 @@ RunGame() {
 		loaded := True
 	}
 	
-	;Look for gameover
+	;Look for gameover/surrender
 	ExitArena()
+	Surrender()
 
 	;Shop phase
 	if (ShopOpen()) {
