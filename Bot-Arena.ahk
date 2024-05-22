@@ -72,7 +72,6 @@ RunGame() {
 		;move randomly
 		Send {%CENTER_CAMERA% down}
 		MoveMouseRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 300)
-		Click left
 		AttackMove(500)
 		Send {%CENTER_CAMERA% up}
 	}

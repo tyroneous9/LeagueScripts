@@ -166,6 +166,11 @@ BuyLegendaryAnvil() {
     Sleep 500
     Send {%SHOP%}
     Sleep 500
+    Mousemove SCREEN_CENTER[1], SCREEN_CENTER[2]
+	loop 5 {
+        Click left
+        Sleep 200
+    }
 }
 
 ;follow ally based on SelectAlly key
