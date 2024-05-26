@@ -238,6 +238,15 @@ Recall() {
     return false
 }
 
+ExitArena() {
+    if(exitButton := isExitArena()) {
+        Mousemove exitButton[1], exitButton[2]
+        Click left
+        Sleep 60000
+    }
+}
+
+
 /*
 -------------------------------
             Testing

@@ -85,7 +85,7 @@ RunGame() {
 
 RunTest() {
 	
-	
+	ExitArena()
 
 }
 

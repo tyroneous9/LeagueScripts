@@ -32,12 +32,10 @@ ShopOpen(){
         return [shopX, shopY]
 }
 
-ExitArena(){
+isExitArena(){
     ImageSearch, ExitArenaX, ExitArenaY, 0,0,A_ScreenWidth,A_ScreenHeight, *10 arena_exit.PNG
-    if !ErrorLevel {
-        Click %ExitArenaX%, %ExitArenaY%
-        Sleep 30000
-    }
+    if !ErrorLevel
+        return [ExitArenaX, ExitArenaY]
 }
 
 IsDead(){
