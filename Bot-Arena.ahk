@@ -1,6 +1,6 @@
-﻿#Include BotUtil\ImageFinder.ahk
-#Include BotUtil\BehaviorLib.ahk
-#Include BotUtil\Settings.ahk
+﻿#Include "BotUtil\ImageFinder.ahk"
+#Include "BotUtil\BehaviorLib.ahk"
+#Include "BotUtil\Settings.ahk"
 
 /*
 -------------------------------
@@ -22,15 +22,15 @@ global ACTIVE_RANGE := 615
 
 RunGame() {
 	static loaded := false
-	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
+	if (WinActive(CLIENT_PROCESS)) {
 		if (loaded == true) {
-			Sleep 10000
+			Sleep(10000)
 			loaded := false
 		}
 		RunClient()
 		return
 	} else if (loaded == false) {
-		Sleep 10000
+		Sleep(2000)
 		loaded := True
 	}
 	
@@ -39,10 +39,8 @@ RunGame() {
 	Surrender()
 
 	;Shop phase
-	if (ShopOpen()) {
-		Sleep 1000
-		Send {%SHOP%}
-		Sleep 1000
+	if (ShopFlag := ShopOpen()) {
+		Sleep(500)
 		BuyLegendaryAnvil()
 		LevelUp(MAX_ORDER) 
 	}
@@ -50,30 +48,29 @@ RunGame() {
 	; Combat
 	if (EnemyPosXY := FindEnemyXY()) { 
 		;move toward enemy if seen
-		Mousemove EnemyPosXY[1], EnemyPosXY[2]
-		Click Right
-		Send {%CENTER_CAMERA% down}
+		Click(EnemyPosXY[1], EnemyPosXY[2], "R")
+		Send("{" CENTER_CAMERA " down}")
 		if (EnemyPosXY := FindEnemyXY()) {
 			EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
 			if (EnemyDistance < ACTIVE_RANGE) {
-				AttackEnemy(CAST_ORDER)
-				MoveMouseRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 300)
+				AttackEnemy(CAST_ORDER, &EnemyPosXY)
+				MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 300)
 				AttackMove(300)
 			}
 		}
-		Send {%CENTER_CAMERA% up}
+		Send("{" CENTER_CAMERA " up}")
 	} else if (AllyPosXY := FindAllyXY()) { 
 		;move toward ally
-		MoveMouseRandom(AllyPosXY[1], AllyPosXY[2], 300)
+		MoveCursorRandom(AllyPosXY[1], AllyPosXY[2], 300)
 		AttackMove(500)
-		Send {%CENTER_CAMERA% down}
-		Send {%CENTER_CAMERA% up}
+		Send("{" CENTER_CAMERA " down}")
+		Send("{" CENTER_CAMERA " up}")
 	} else { 
 		;move randomly
-		Send {%CENTER_CAMERA% down}
-		MoveMouseRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 300)
+		Send("{" CENTER_CAMERA " down}")
+		MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 300)
 		AttackMove(500)
-		Send {%CENTER_CAMERA% up}
+		Send("{" CENTER_CAMERA " up}")
 	}
 }
 
@@ -84,21 +81,35 @@ RunGame() {
 */
 
 RunTest() {
-	
-	ExitArena()
+	static loaded := false
+	loop {
+		if (WinActive(CLIENT_PROCESS)) {
+			if (loaded == true) {
+				Sleep(10000)
+				loaded := false
+			}
+		} else if (loaded == false) {
+				Sleep(2000)
+				loaded := True
+			}
+	}
 
 }
 
 ;testing
 Ins::
+{ 
 RunTest()
 return
+} 
 
 ;run script
 Home::
-loop
+{ 
+Loop
 	RunGame()
 return
-Del::ExitApp
-End::Reload
+} 
+Del::ExitApp()
+End::Reload()
 
