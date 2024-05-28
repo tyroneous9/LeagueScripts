@@ -22,15 +22,15 @@ global ACTIVE_RANGE := 615
 
 RunGame() {
 	static loaded := false
-	if (WinActive(CLIENT_PROCESS)) {
+	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
 		if (loaded == true) {
-			Sleep(10000)
+			Sleep 10000
 			loaded := false
 		}
 		RunClient()
 		return
 	} else if (loaded == false) {
-		Sleep(2000)
+		Sleep 2000
 		loaded := True
 	}
 	
