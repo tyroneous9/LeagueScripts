@@ -182,7 +182,7 @@ BuyLegendaryAnvil() {
         Send("{" SHOP "}")
         Sleep(500)
         DllCall("SetCursorPos", "int", SCREEN_CENTER[1], "int", SCREEN_CENTER[2])
-        Click 3
+        Click 10
     }
 }
 
