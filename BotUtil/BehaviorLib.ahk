@@ -184,7 +184,7 @@ BuyLegendaryAnvil() {
         DllCall("SetCursorPos", "int", SCREEN_CENTER[1], "int", SCREEN_CENTER[2])
         loop 5 {
             Click
-            Sleep 200
+            Sleep 400
         }
     }
 }
