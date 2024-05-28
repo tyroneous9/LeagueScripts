@@ -22,7 +22,7 @@ global ACTIVE_RANGE := 615
 
 RunGame() {
 	static loaded := false
-	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
+	if (WinActive(CLIENT_PROCESS)) {
 		if (loaded == true) {
 			Sleep 10000
 			loaded := false
@@ -36,7 +36,6 @@ RunGame() {
 	
 	;Look for gameover/surrender
 	ExitArena()
-	Surrender()
 
 	;Shop phase
 	if (ShopFlag := ShopOpen()) {
