@@ -35,8 +35,9 @@ ShopOpen(){
 ExitArena(){
     ErrorLevel := !ImageSearch(&ExitArenaX, &ExitArenaY, 0, 0, A_ScreenWidth, A_ScreenHeight, "*10 arena_exit.PNG")
     if !ErrorLevel {
-        Click(ExitArenaX ", " ExitArenaY)
-        Sleep(60000)
+        DllCall("SetCursorPos", "int", ExitArenaX, "int", ExitArenaY)
+        Click
+        Sleep(30000)
     }
 }
 
@@ -62,8 +63,10 @@ AcceptQueue(){
 
 Surrender(){
     ErrorLevel := !ImageSearch(&SurrenderX, &SurrenderY, 0, 0, A_ScreenWidth, A_ScreenHeight, "surrender.PNG")
-        if !Errorlevel 
-            Click(SurrenderX ", " SurrenderY)
+        if !Errorlevel {
+            DllCall("SetCursorPos", "int", SurrenderX, "int", SurrenderY)
+            Click
+        }
 }
 
 
