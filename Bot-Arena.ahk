@@ -39,7 +39,6 @@ RunGame() {
 
 	;Shop phase
 	if (ShopFlag := ShopOpen()) {
-		Sleep(500)
 		BuyLegendaryAnvil()
 		LevelUp(MAX_ORDER) 
 	}
@@ -69,6 +68,7 @@ RunGame() {
 		Send("{" CENTER_CAMERA " down}")
 		MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 300)
 		AttackMove(500)
+		Click
 		Send("{" CENTER_CAMERA " up}")
 	}
 }
