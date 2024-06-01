@@ -11,37 +11,41 @@
 RunClient(champName := "") {
     if IsPickingChamp() {
         while (IsPickingChamp() == True) {
-            MousePercentMove(60,14)
+            MousePercentMove(60,14,CLIENT_PROCESS)
             Click("left")
             Send(champName)
             Sleep(500)
-            MousePercentMove(30,22)
+            MousePercentMove(30,22,CLIENT_PROCESS)
             Click("left")
             Sleep(500)
-            MousePercentMove(50,85)
+            MousePercentMove(50,85,CLIENT_PROCESS)
             Click("Left")
             Sleep(500)
-            MousePercentMove(60,14)
+            MousePercentMove(60,14,CLIENT_PROCESS)
             Click("left")
             Sleep(500)
             Send("^a{Delete}")
             Sleep(500)
         }
     } else {
-        MousePercentMove(46,95)
+        MousePercentMove(46,95,CLIENT_PROCESS)
         Click("left")
-        MousePercentMove(50,78)
+        MousePercentMove(50,78,CLIENT_PROCESS) 
         Click("left")
         Sleep(1000)
     }
 }
 
 ;move mouse % window distance
-MousePercentMove(xPercent, yPercent) {
-    WinGetPos(&X, &Y, &W, &H, CLIENT_PROCESS)
-    xFlat := W*1/100*xPercent
-    yFlat := H*1/100*yPercent
-    MouseMove(xFlat, yFlat)
+MousePercentMove(xPercent, yPercent, window) {
+    if (!window) {
+        Sleep 1000
+    } else {
+        WinGetPos(&X, &Y, &W, &H, window)
+        xFlat := W*1/100*xPercent
+        yFlat := H*1/100*yPercent
+        MouseMove(xFlat, yFlat)
+    }
 }
 
 /*
