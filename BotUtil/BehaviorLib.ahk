@@ -38,7 +38,7 @@ RunClient(champName := "") {
 
 ;move mouse % window distance
 MousePercentMove(xPercent, yPercent, window) {
-    if (!window) {
+    if (!WinActive(window)) {
         Sleep 1000
     } else {
         WinGetPos(&X, &Y, &W, &H, window)
