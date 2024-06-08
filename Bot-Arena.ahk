@@ -30,7 +30,7 @@ RunGame() {
 		RunClient()
 		return
 	} else if (loaded == false) {
-		Sleep 2000
+		Sleep 5000
 		loaded := True
 	}
 	
@@ -88,7 +88,7 @@ RunTest() {
 				loaded := false
 			}
 		} else if (loaded == false) {
-				Sleep(2000)
+				Sleep(5000)
 				loaded := True
 			}
 	}
