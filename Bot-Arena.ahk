@@ -39,7 +39,9 @@ RunGame() {
 
 	;Shop phase
 	if (ShopFlag := ShopOpen()) {
-		BuyLegendaryAnvil()
+		Send("{" Shop "}")
+        Sleep(500)
+        BuyRecommended()
 		LevelUp(MAX_ORDER) 
 	}
 
