@@ -40,7 +40,7 @@ RunClient(champName := "") {
 MousePercentMove(xPercent, yPercent, window) {
     if (!WinActive(window)) {
         Sleep 1000
-    } else { a awayX
+    } else {
         WinGetPos(&X, &Y, &W, &H, window)
         xFlat := W*1/100*xPercent
         yFlat := H*1/100*yPercent
