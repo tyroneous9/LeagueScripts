@@ -37,7 +37,7 @@ ExitArena(){
     if !ErrorLevel {
         DllCall("SetCursorPos", "int", ExitArenaX, "int", ExitArenaY)
         Click
-        Sleep(30000)
+        Sleep(10000)
     }
 }
 
