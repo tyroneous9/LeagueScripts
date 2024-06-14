@@ -1,6 +1,6 @@
-﻿#Include BotUtil\ImageFinder.ahk
-#Include BotUtil\BehaviorLib.ahk
-#Include BotUtil\Settings.ahk
+﻿#Include "BotUtil\ImageFinder.ahk"
+#Include "BotUtil\BehaviorLib.ahk"
+#Include "BotUtil\Settings.ahk"
 
 /*
 -------------------------------
@@ -22,15 +22,15 @@ global ACTIVE_RANGE := 500
 
 RunGame() {
 	static loaded := false
-	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
+	if (WinActive(CLIENT_PROCESS)) {
 		if (loaded == true) {
-			Sleep 10000
+			Sleep(10000)
 			loaded := false
 		}
 		RunClient()
 		return
 	} else if (loaded == false) {
-		Sleep 10000
+		Sleep(5000)
 		loaded := True
 	}
 	
@@ -49,24 +49,24 @@ RunGame() {
 	AllyPosXY := FindAllyXY()
 	if (AllyPosXY) { ; ally
 		; determine enemy proximity
-		Send {%CENTER_CAMERA% down}
-		Sleep 10
+		Send("{" CENTER_CAMERA " down}")
+		Sleep(10)
 		if (EnemyPosXY := FindEnemyXY()) {
 			EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
 			; attack if close
 			if (EnemyDistance < ACTIVE_RANGE) {
-				AttackEnemy(CAST_ORDER)
+				AttackEnemy(CAST_ORDER, &EnemyPosXY)
 			}
 		} else { ; look for ally
-			Random, num, 1, 4
+			num := Random(1, 4)
 			AllyCurrent := SELECT_ALLY_ARR[num]
-			Sleep 100
+			Sleep(100)
 		}
-		Send {%CENTER_CAMERA% up}
+		Send("{" CENTER_CAMERA " up}")
 	} else { ; look for ally
-		Random, num, 1, 4
+		num := Random(1, 4)
 		AllyCurrent := SELECT_ALLY_ARR[num]
-		Sleep 400
+		Sleep(400)
 	}
 	FollowAlly(AllyCurrent, 256)
 }
@@ -85,14 +85,18 @@ RunTest() {
 
 ;testing
 Ins::
+{ 
 RunTest() 
 return
 
 ;run script
+} 
 Home::
-loop
+{
+Loop
 	RunGame()
 return
-Del::ExitApp
-End::Reload
+} 
+Del::ExitApp()
+End::Reload()
 

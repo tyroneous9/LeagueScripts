@@ -66,7 +66,16 @@ Surrender(){
         if !Errorlevel {
             DllCall("SetCursorPos", "int", SurrenderX, "int", SurrenderY)
             Click
+            Sleep(30000)
         }
 }
 
+SurrenderArena(){
+    ErrorLevel := !ImageSearch(&SurrenderX, &SurrenderY, 0, 0, A_ScreenWidth, A_ScreenHeight, "surrender_arena.PNG")
+        if !Errorlevel {
+            DllCall("SetCursorPos", "int", SurrenderX, "int", SurrenderY)
+            Click
+            Sleep(30000)
+        }
+}
 

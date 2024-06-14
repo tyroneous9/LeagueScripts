@@ -24,18 +24,19 @@ RunGame() {
 	static loaded := false
 	if (WinActive(CLIENT_PROCESS)) {
 		if (loaded == true) {
-			Sleep 10000
+			Sleep(10000)
 			loaded := false
 		}
 		RunClient()
 		return
 	} else if (loaded == false) {
-		Sleep 5000
+		Sleep(5000)
 		loaded := True
 	}
 	
 	;Look for gameover/surrender
 	ExitArena()
+	SurrenderArena()
 
 	;Shop phase
 	if (ShopFlag := ShopOpen()) {
@@ -82,19 +83,7 @@ RunGame() {
 */
 
 RunTest() {
-	static loaded := false
-	loop {
-		if (WinActive(CLIENT_PROCESS)) {
-			if (loaded == true) {
-				Sleep(10000)
-				loaded := false
-			}
-		} else if (loaded == false) {
-				Sleep(5000)
-				loaded := True
-			}
-	}
-
+	SurrenderArena()
 }
 
 ;testing
