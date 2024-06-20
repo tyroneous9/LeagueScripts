@@ -30,7 +30,7 @@ RunGame() {
 		RunClient()
 		return
 	} else if (loaded == false) {
-		Sleep(5000)
+		Sleep(10000)
 		loaded := True
 	}
 	
