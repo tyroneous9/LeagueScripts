@@ -255,6 +255,7 @@ AttemptRecall() {
 ;types in surrender vote /ff
 Surrender() {
     Send("{Enter}")
+    Sleep 200
 	Send("/ff")
 	Send("{Enter}")
 }
