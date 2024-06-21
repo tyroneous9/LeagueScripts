@@ -252,6 +252,12 @@ AttemptRecall() {
     return false
 }
 
+;types in surrender vote /ff
+Surrender() {
+    Send("{Enter}")
+	Send("/ff")
+	Send("{Enter}")
+}
 
 /*
 -------------------------------

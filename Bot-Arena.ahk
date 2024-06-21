@@ -34,9 +34,8 @@ RunGame() {
 		loaded := True
 	}
 	
-	;Look for gameover/surrender
+	;Look for gameover
 	ExitArena()
-	SurrenderArena()
 
 	;Shop phase
 	if (ShopFlag := ShopOpen()) {
@@ -44,6 +43,7 @@ RunGame() {
         Sleep(500)
         BuyRecommended()
 		LevelUp(MAX_ORDER) 
+		Surrender()
 	}
 
 	; Combat
@@ -83,7 +83,7 @@ RunGame() {
 */
 
 RunTest() {
-	SurrenderArena()
+	Surrender()
 }
 
 ;testing

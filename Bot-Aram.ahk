@@ -30,17 +30,15 @@ RunGame() {
 		RunClient()
 		return
 	} else if (loaded == false) {
-		Sleep(5000)
+		Sleep(10000)
 		loaded := True
 	}
-	
-	; Look for surrender
-	Surrender()
 
 	; Shop/level
 	if (IsDead()) {
 		BuyRecommended()
 		LevelUp(MAX_ORDER) 
+		Surrender()
 	}
 
 	; Combat
