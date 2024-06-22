@@ -65,6 +65,7 @@ RunGame() {
 		Click "Right"
 		Send("{" CENTER_CAMERA " down}")
 		Send("{" CENTER_CAMERA " up}")
+		Sleep 300
 	} else { 
 		;move randomly
 		Send("{" CENTER_CAMERA " down}")
@@ -72,6 +73,7 @@ RunGame() {
 		Click "Right"
 		Click "Left"
 		Send("{" CENTER_CAMERA " up}")
+		Sleep 300
 	}
 }
 
@@ -82,36 +84,9 @@ RunGame() {
 */
 
 RunTest() {
-	
-	; Combat
-	if (EnemyPosXY := FindEnemyXY()) { 
-		;move toward enemy if seen
-		Click(EnemyPosXY[1], EnemyPosXY[2], "R")
-		Send("{" CENTER_CAMERA " down}")
-		if (EnemyPosXY := FindEnemyXY()) {
-			EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
-			if (EnemyDistance < ACTIVE_RANGE) {
-				AttackEnemy(CAST_ORDER, &EnemyPosXY)
-				MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 200)
-				AttackMove(300)
-			}
-		}
-		Send("{" CENTER_CAMERA " up}")
-	} else if (AllyPosXY := FindAllyXY()) { 
-		;move toward ally
-		MoveCursorRandom(AllyPosXY[1], AllyPosXY[2], 200)
-		Click "Right"
-		Send("{" CENTER_CAMERA " down}")
-		Send("{" CENTER_CAMERA " up}")
-	} else { 
-		;move randomly
-		Send("{" CENTER_CAMERA " down}")
-		MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 400)
-		Click "Right"
-		Click "Left"
-		Send("{" CENTER_CAMERA " up}")
+	loop {
+
 	}
-	
 }
 
 ;testing
