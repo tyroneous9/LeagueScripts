@@ -55,23 +55,23 @@ RunGame() {
 			EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
 			if (EnemyDistance < ACTIVE_RANGE) {
 				AttackEnemy(CAST_ORDER, &EnemyPosXY)
-				MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 300)
+				MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 200)
 				AttackMove(300)
 			}
 		}
 		Send("{" CENTER_CAMERA " up}")
 	} else if (AllyPosXY := FindAllyXY()) { 
 		;move toward ally
-		MoveCursorRandom(AllyPosXY[1], AllyPosXY[2], 300)
-		AttackMove(500)
+		MoveCursorRandom(AllyPosXY[1], AllyPosXY[2], 150)
+		Click Right
 		Send("{" CENTER_CAMERA " down}")
 		Send("{" CENTER_CAMERA " up}")
 	} else { 
 		;move randomly
 		Send("{" CENTER_CAMERA " down}")
-		MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 300)
-		AttackMove(500)
-		Click
+		MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 150)
+		Click Right
+		Click Left
 		Send("{" CENTER_CAMERA " up}")
 	}
 }
