@@ -7,7 +7,7 @@ CoordMode("Mouse", "Window")
 SendMode("Event")
 SetMouseDelay(1)
 SetDefaultMouseSpeed(0)
-#Warn
+#Warn All, Off
 
 LoadScript() {
     global ATTACK_MOVE, CENTER_CAMERA, HOLD_TO_LEVEL, ITEM_SLOTS_ARR, RECALL, SCROLL_CAM_ARR
