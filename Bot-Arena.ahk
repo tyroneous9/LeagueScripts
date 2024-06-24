@@ -42,7 +42,9 @@ RunGame() {
 		Send("{" Shop "}")
         Sleep(500)
         BuyRecommended()
-		LevelUp(MAX_ORDER) 
+		loop 3 {
+			LevelUp(MAX_ORDER) 
+		}
 		Surrender()
 	}
 
@@ -84,9 +86,7 @@ RunGame() {
 */
 
 RunTest() {
-	loop {
 
-	}
 }
 
 ;testing
