@@ -202,9 +202,9 @@ FollowAlly(ally, offset) {
 ;attack enemy with specified cast order and items
 ;requires enemypos
 AttackEnemy(CAST_ORDER, &EnemyPosXY) {
-    Send("{" ATTACK_MOVE "}")
     Loop CAST_ORDER.Length {
         DllCall("SetCursorPos", "int", EnemyPosXY[1], "int", EnemyPosXY[2])
+        Send("{" ATTACK_MOVE "}")
         ability := CAST_ORDER[A_Index]
         Send(ability)
         Sleep(100)
