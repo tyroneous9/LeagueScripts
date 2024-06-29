@@ -45,7 +45,7 @@ RunGame() {
 		loop 3 {
 			LevelUp(MAX_ORDER) 
 		}
-		Surrender()
+		;Surrender()  TURN THIS ON IF DUO
 	}
 
 	; Combat
