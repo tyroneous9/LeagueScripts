@@ -27,7 +27,7 @@ RunGame() {
 			Sleep(10000)
 			loaded := false
 		}
-		RunClient()
+		RunClient(CHAMPION)
 		return
 	} else if (loaded == false) {
 		Sleep(10000)
