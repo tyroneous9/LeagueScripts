@@ -59,7 +59,6 @@ RunGame() {
 			EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
 			if (EnemyDistance < ACTIVE_RANGE) {
 				AttackEnemy(CAST_ORDER, &EnemyPosXY)
-				MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 150)
 			}
 		}
 		Send("{" CENTER_CAMERA " up}")
