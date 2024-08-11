@@ -24,14 +24,14 @@ RunGame() {
 	static loaded := false
 	if (WinActive(CLIENT_PROCESS)) { ;CLIENT UP
 		if (loaded == true) {
-			Sleep(10000)
+			Sleep(20000)
 			loaded := false
 		}
 		RunClient(CHAMPION)
 		return
-	} else if (!WinActive(CLIENT_PROCESS)) { ;CLIENT DOWN
-		if(loaded == false) {
-			Sleep(10000)
+	} else if (loaded == false) { ;NOT INGAME
+		Sleep(20000)
+		if (!WinActive(CLIENT_PROCESS)) { ;GAME DOWN
 			loaded := True
 		}
 	}
