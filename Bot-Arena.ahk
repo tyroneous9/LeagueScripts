@@ -22,19 +22,21 @@ global ACTIVE_RANGE := 615
 
 RunGame() {
 	static loaded := false
-	if (WinActive(CLIENT_PROCESS)) {
+	if (WinActive(CLIENT_PROCESS)) { ;CLIENT UP
 		if (loaded == true) {
-			Sleep(10000)
+			Sleep(20000)
 			loaded := false
 		}
-		RunClient()
+		RunClient(CHAMPION)
 		return
-	} else if (loaded == false) {
-		Sleep(10000)
-		loaded := True
+	} else if (loaded == false) { ;NOT INGAME
+		Sleep(20000)
+		if (!WinActive(CLIENT_PROCESS)) { ;GAME DOWN
+			loaded := True
+		}
 	}
 	
-	;Look for gameover
+	;Look for gameover/surrender
 	ExitArena()
 
 	;Shop phase
@@ -45,7 +47,7 @@ RunGame() {
 		loop 3 {
 			LevelUp(MAX_ORDER) 
 		}
-		;Surrender()  TURN THIS ON IF DUO
+		Surrender()  ;TURN THIS ON IF DUO
 	}
 
 	; Combat
@@ -57,7 +59,6 @@ RunGame() {
 			EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
 			if (EnemyDistance < ACTIVE_RANGE) {
 				AttackEnemy(CAST_ORDER, &EnemyPosXY)
-				MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 150)
 			}
 		}
 		Send("{" CENTER_CAMERA " up}")
@@ -75,7 +76,7 @@ RunGame() {
 		Click "Right"
 		Click "Left"
 		Send("{" CENTER_CAMERA " up}")
-		Sleep 300
+		Sleep 600
 	}
 }
 

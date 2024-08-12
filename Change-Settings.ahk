@@ -18,6 +18,7 @@ controlDict["Item slots"] := "1,2,3,4,5,6,7"
 controlDict["Select Ally"] := "F2,F3,F4,F5"
 controlDict["Scroll Camera"] := "up,down,left,right"
 controlDict["Recall"] := "b"
+controlDict["Champion"] := " "
 defaultDict := controlDict.Clone()
 path := A_ScriptDir "\config.cfg"
 

@@ -11,20 +11,21 @@
 RunClient(champName := "") {
     if IsPickingChamp() {
         while (IsPickingChamp() == True) {
-            MousePercentMove(60,14,CLIENT_PROCESS)
+            MousePercentMove(60,14,CLIENT_PROCESS) ;search bar
+            Click("left")
+            Sleep(500)
+            MousePercentMove(30,22,CLIENT_PROCESS) ;champ icon
+            Click("left")
+            Sleep(500)
+            MousePercentMove(60,14,CLIENT_PROCESS) ;search bar
             Click("left")
             Send(champName)
             Sleep(500)
-            MousePercentMove(30,22,CLIENT_PROCESS)
+            MousePercentMove(30,22,CLIENT_PROCESS) ;champ icon
             Click("left")
             Sleep(500)
-            MousePercentMove(50,85,CLIENT_PROCESS)
+            MousePercentMove(50,85,CLIENT_PROCESS) ;lock in
             Click("Left")
-            Sleep(500)
-            MousePercentMove(60,14,CLIENT_PROCESS)
-            Click("left")
-            Sleep(500)
-            Send("^a{Delete}")
             Sleep(500)
         }
     } else {

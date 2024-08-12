@@ -12,7 +12,7 @@ SetDefaultMouseSpeed(0)
 LoadScript() {
     global ATTACK_MOVE, CENTER_CAMERA, HOLD_TO_LEVEL, ITEM_SLOTS_ARR, RECALL, SCROLL_CAM_ARR
     global SELECT_ALLY_ARR, SHOP, SPELL_1, SPELL_2, SPELL_3, SPELL_4, SUM_1, SUM_2
-    global SCREEN_CENTER, CLIENT_PROCESS, GAME_PROCESS
+    global SCREEN_CENTER, CLIENT_PROCESS, GAME_PROCESS, CHAMPION
 
     ; A_ScriptDir MUST BE IN LEAGUE_SCRIPTS
     infile := FileOpen(A_ScriptDir "\config.cfg", "r")
@@ -58,6 +58,8 @@ LoadScript() {
                         SUM_1 := keyValue[2]
                     case "Sum 2": 
                         SUM_2 := keyValue[2]
+                    case "Champion":
+                        CHAMPION := keyValue[2]
                 }
         }
     }
