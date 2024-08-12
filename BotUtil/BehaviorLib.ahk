@@ -33,6 +33,7 @@ RunClient(champName := "") {
         MousePercentMove(50,78,CLIENT_PROCESS) 
         Click("left")
         Sleep(1000)
+        CloseFeedback()
     }
 }
 

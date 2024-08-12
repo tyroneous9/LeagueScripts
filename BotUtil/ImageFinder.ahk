@@ -61,3 +61,9 @@ AcceptQueue(){
         }
 }
 
+CloseFeedback(){
+    ErrorLevel := !ImageSearch(&CloseFeedbackX, &CloseFeedbackY, 0, 0, A_ScreenWidth, A_ScreenHeight, "close_feedback.PNG")
+        if !Errorlevel {
+            Click(CloseFeedbackX ", " CloseFeedbackY)
+        }
+}
