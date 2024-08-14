@@ -1,4 +1,3 @@
-﻿SetWorkingDir(A_ScriptDir "\resources")
 #Include "BotUtil\ImageFinder.ahk"
 #Include "BotUtil\BehaviorLib.ahk"
 #Include "BotUtil\Settings.ahk"
@@ -13,7 +12,7 @@ LoadScript()
 ;Constants
 global MAX_ORDER := ["r", "q", "w", "e"]
 global CAST_ORDER := [SPELL_4, SPELL_3, SPELL_2, SPELL_1]
-global ACTIVE_RANGE := 500
+global ACTIVE_RANGE := 615
 
 /*
 -------------------------------
@@ -23,7 +22,7 @@ global ACTIVE_RANGE := 500
 
 RunGame() {
 	static loaded := false
-	if (WinActive(CLIENT_PROCESS)) {
+	if (!WinActive(GAME_PROCESS) && WinActive(CLIENT_PROCESS)) {
 		if (loaded == true) {
 			Sleep(10000)
 			loaded := false
@@ -34,46 +33,47 @@ RunGame() {
 		Sleep(10000)
 		loaded := True
 	}
+	
+	;Look for gameover/surrender
+	ExitArena()
+	Surrender()
 
-	; Shop/level
-	if (IsDead()) {
-		BuyRecommended()
+	;Shop phase
+	if (ShopOpen()) {
+		Sleep(1000)
+		Send("{" SHOP "}")
+		Sleep(1000)
+		BuyLegendaryAnvil()
 		LevelUp(MAX_ORDER) 
-		Surrender()
 	}
 
 	; Combat
-	static AllyCurrent := 0
-	; determine ally presence
-	AllyPosXY := FindAllyXY()
-	if (AllyPosXY) { ; ally
-		; determine enemy proximity
+	if (EnemyPosXY := FindEnemyXY()) { 
+		;move toward enemy if seen
+		Click(EnemyPosXY[1], EnemyPosXY[2], "R")
 		Send("{" CENTER_CAMERA " down}")
-		Sleep(10)
 		if (EnemyPosXY := FindEnemyXY()) {
 			EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
-			; attack if close
 			if (EnemyDistance < ACTIVE_RANGE) {
 				AttackEnemy(CAST_ORDER, &EnemyPosXY)
+				MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 300)
+				AttackMove(300)
 			}
-		} else { ; look for ally
-			num := Random(1, 4)
-			AllyCurrent := SELECT_ALLY_ARR[num]
-			Sleep(100)
 		}
 		Send("{" CENTER_CAMERA " up}")
-	} else { ; look for ally
-		num := Random(1, 4)
-		AllyCurrent := SELECT_ALLY_ARR[num]
-		Sleep(400)
+	} else if (AllyPosXY := FindAllyXY()) { 
+		;move toward ally
+		MoveCursorRandom(AllyPosXY[1], AllyPosXY[2], 300)
+		AttackMove(500)
+		Send("{" CENTER_CAMERA " down}")
+		Send("{" CENTER_CAMERA " up}")
+	} else { 
+		;move randomly
+		Send("{" CENTER_CAMERA " down}")
+		MoveCursorRandom(SCREEN_CENTER[1], SCREEN_CENTER[2], 300)
+		AttackMove(500)
+		Send("{" CENTER_CAMERA " up}")
 	}
-	FollowAlly(AllyCurrent, 256)
-}
-
-RunTest() {
-	StartTime := A_TickCount
-
-	;MsgBox % A_TickCount - StartTime " milliseconds have elapsed."
 }
 
 /*
@@ -82,16 +82,20 @@ RunTest() {
 -------------------------------
 */
 
+RunTest() {
+
+}
+
 ;testing
 Ins::
 { 
-RunTest() 
+RunTest()
 return
 
 ;run script
 } 
 Home::
-{
+{ 
 Loop
 	RunGame()
 return
