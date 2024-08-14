@@ -1,1 +1,0 @@
-MsgBox % SplitPath 'OutDir'
