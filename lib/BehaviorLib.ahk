@@ -268,6 +268,30 @@ Surrender() {
 -------------------------------
 */
 
+; tests speed of a run
+TimeTest() {
+    NumRuns := 30
+    TotalRuntime := 0
+    loop NumRuns {
+        StartTime := A_TickCount
+        ;RUN FUNCTION HERE
+        /*****************/
+    
+        /*****************/
+        TotalRuntime := TotalRuntime + (A_TickCount - StartTime)
+    }
+    MsgBox "Total Time: " TotalRuntime " ms"
+        .  "`n`nAverage Time: " TotalRuntime / NumRuns " ms"
+}
+
+; checks image found + info
+ImageFound(searchResult) {
+    MsgBox "Found:`t" (IsObject(searchResult)?searchResult.Length:searchResult)
+      . "`n`nTime:`t" (A_TickCount-t1) " ms"
+      . "`n`nPos:`t" foundX ", " foundY
+      . "`n`nResult:`t<" (IsObject(searchResult)?searchResult[1].id:"") ">", "Tip", 4096
+}
+
 ; prints user keybindings
 PrintKeys() {
     infile := FileOpen(A_ScriptDir "\config.cfg", "r")

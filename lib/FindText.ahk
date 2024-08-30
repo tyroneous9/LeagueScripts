@@ -1,13 +1,13 @@
 ;/*
 ;===========================================
 ;  FindText - Capture screen image into text and then find it
-;  https://www.autohotkey.com/boards/viewtopic.php?f=6&t=17834
+;  https://www.autohotkey.com/boards/viewtopic.php?f=83&t=116471
 ;
 ;  Author  : FeiYue
 ;  Version : 9.8
 ;  Date    : 2024-07-28
 ;
-;  Usage:  (required AHK v1.1.34+)
+;  Usage:  (required AHK v2.0.2+)
 ;  1. Capture the image to text string.
 ;  2. Test find the text string on full Screen.
 ;  3. When test is successful, you may copy the code
@@ -33,29 +33,22 @@ if (!A_IsCompiled && A_LineFile=A_ScriptFullPath)
 ;===== Copy The Following Functions To Your Own Code Just once =====
 
 
-FindText(ByRef x:="FindTextClass", ByRef y:="", args*)
+FindText(args*)
 {
-  static init, obj
-  if !VarSetCapacity(init) && (init:="1")
-    obj:=new FindTextClass()
-  return (x=="FindTextClass" && !args.Length()) ? obj : obj.FindText(x, y, args*)
+  static obj:=FindTextClass()
+  return !args.Length ? obj : obj.FindText(args*)
 }
 
 Class FindTextClass
 {  ;// Class Begin
 
-Floor(i)
-{
-  if i is number
-    return i+0
-  else return 0
-}
+Floor(i) => IsNumber(i) ? i+0 : 0
 
 __New()
 {
   this.bits:={ Scan0: 0, hBM: 0, oldzw: 0, oldzh: 0 }
   this.bind:={ id: 0, mode: 0, oldStyle: 0 }
-  this.Lib:=[]
+  this.Lib:=Map()
   this.Cursor:=0
 }
 
@@ -67,7 +60,7 @@ __Delete()
 
 New()
 {
-  return new FindTextClass()
+  return FindTextClass()
 }
 
 help()
@@ -79,8 +72,8 @@ return "
 ;  Version : 9.8  (2024-07-28)
 ;--------------------------------
 ;  returnArray:=FindText(
-;      OutputX --> The name of the variable used to store the returned X coordinate
-;    , OutputY --> The name of the variable used to store the returned Y coordinate
+;      &OutputX --> The name of the variable used to store the returned X coordinate
+;    , &OutputY --> The name of the variable used to store the returned Y coordinate
 ;    , X1 --> the search scope's upper left corner X coordinates
 ;    , Y1 --> the search scope's upper left corner Y coordinates
 ;    , X2 --> the search scope's lower right corner X coordinates
@@ -120,8 +113,8 @@ return "
 ;  Timeout means failure, return 0, and return other values means success
 ;  If you want to appear and the image is found, return the found array object
 ;  If you want to disappear and the image cannot be found, return 1
-;  Example 1: FindText(X:='wait', Y:=3, 0,0,0,0,0,0,Text)   ; Wait 3 seconds for appear
-;  Example 2: FindText(X:='wait0', Y:=-1, 0,0,0,0,0,0,Text) ; Wait indefinitely for disappear
+;  Example 1: FindText(&X:='wait', &Y:=3, 0,0,0,0,0,0,Text)   ; Wait 3 seconds for appear
+;  Example 2: FindText(&X:='wait0', &Y:=-1, 0,0,0,0,0,0,Text) ; Wait indefinitely for disappear
 ;
 ;  <FindMultiColor> or <FindColor> : FindColor is FindMultiColor with only one point
 ;  Text:='|<>##DRDGDB $ 0/0/RRGGBB1-DRDGDB1/RRGGBB2, xn/yn/-RRGGBB3/RRGGBB4, ...'
@@ -140,15 +133,14 @@ return "
 )"
 }
 
-FindText(ByRef OutputX:="", ByRef OutputY:=""
+FindText(&OutputX:="", &OutputY:=""
   , x1:=0, y1:=0, x2:=0, y2:=0, err1:=0, err0:=0, text:=""
   , ScreenShot:=1, FindAll:=1, JoinText:=0, offsetX:=20, offsetY:=10
   , dir:=1, zoomW:=1, zoomH:=1)
 {
-  local
-  if (OutputX ~= "i)^\s*wait[10]?\s*$")
+  if IsSet(OutputX) && (OutputX ~= "i)^\s*wait[10]?\s*$")
   {
-    found:=!InStr(OutputX,"0"), time:=this.Floor(OutputY)
+    found:=!InStr(OutputX, "0"), time:=this.Floor(OutputY ?? 0)
     , timeout:=A_TickCount+Round(time*1000), OutputX:=""
     Loop
     {
@@ -167,37 +159,35 @@ FindText(ByRef OutputX:="", ByRef OutputY:=""
     }
     return 0
   }
-  SetBatchLines % (bch:=A_BatchLines)?"-1":"-1"
   x1:=this.Floor(x1), y1:=this.Floor(y1), x2:=this.Floor(x2), y2:=this.Floor(y2)
   if (x1=0 && y1=0 && x2=0 && y2=0)
     n:=150000, x:=y:=-n, w:=h:=2*n
   else
     x:=Min(x1,x2), y:=Min(y1,y2), w:=Abs(x2-x1)+1, h:=Abs(y2-y1)+1
-  bits:=this.GetBitsFromScreen(x,y,w,h,ScreenShot,zx,zy), x-=zx, y-=zy
+  bits:=this.GetBitsFromScreen(&x,&y,&w,&h,ScreenShot,&zx,&zy), x-=zx, y-=zy
   , this.ok:=0, info:=[]
-  Loop Parse, text, |
+  Loop Parse, text, "|"
     if IsObject(j:=this.PicInfo(A_LoopField))
       info.Push(j)
-  if (w<1 || h<1 || !(num:=info.Length()) || !bits.Scan0)
+  if (w<1 || h<1 || !(num:=info.Length) || !bits.Scan0)
   {
-    SetBatchLines % bch
     return 0
   }
-  arr:=[], info2:=[], k:=0, s:=""
+  arr:=[], info2:=Map(), info2.Default:=[], k:=0, s:=""
   , mode:=(IsObject(JoinText) ? 2 : JoinText ? 1 : 0)
   For i,j in info
   {
     k:=Max(k, (j[7]=5 && j[8]=0 ? j[9] : j[2]*j[3]))
     if (mode)
       v:=(mode=1 ? i : j[10]) . "", s.="|" v
-      , (v!="") && ((!info2.HasKey(v) && info2[v]:=[]), info2[v].Push(j))
+      , (v!="") && ((!info2.Has(v) && info2[v]:=[]), info2[v].Push(j))
   }
   sx:=x, sy:=y, sw:=w, sh:=h
   , (mode=1 && JoinText:=[s])
-  , VarSetCapacity(s1,k*4), VarSetCapacity(s0,k*4), VarSetCapacity(ss,sw*(sh+3))
+  , s1:=Buffer(k*4), s0:=Buffer(k*4), ss:=Buffer(sw*(sh+3))
   , allpos_max:=(FindAll || JoinText ? 10240 : 1)
   , ini:={ sx:sx, sy:sy, sw:sw, sh:sh, zx:zx, zy:zy
-  , mode:mode, bits:bits, ss:&ss, s1:&s1, s0:&s0
+  , mode:mode, bits:bits, ss:ss.Ptr, s1:s1.Ptr, s0:s0.Ptr
   , err1:err1, err0:err0, allpos_max:allpos_max
   , zoomW:zoomW, zoomH:zoomH }
   Loop 2
@@ -206,9 +196,9 @@ FindText(ByRef OutputX:="", ByRef OutputY:=""
       ini.err1:=err1:=0.05, ini.err0:=err0:=0.05
     if (!JoinText)
     {
-      VarSetCapacity(allpos, allpos_max*4), allpos_ptr:=&allpos
+      allpos:=Buffer(allpos_max*4), allpos_ptr:=allpos.Ptr
       For i,j in info
-      Loop % this.PicFind(ini, j, dir, sx, sy, sw, sh, allpos_ptr)
+      Loop this.PicFind(ini, j, dir, sx, sy, sw, sh, allpos_ptr)
       {
         pos:=NumGet(allpos, 4*(A_Index-1), "uint")
         , x:=(pos&0xFFFF)+zx, y:=(pos>>16)+zy
@@ -225,14 +215,13 @@ FindText(ByRef OutputX:="", ByRef OutputY:=""
       , (InStr(v,"|")?"|":""), " `t")
       , this.JoinText(arr, ini, info2, v, 1, offsetX, offsetY
       , FindAll, dir, 0, 0, 0, sx, sy, sw, sh)
-      if (!FindAll && arr.Length())
+      if (!FindAll && arr.Length)
         Break 2
     }
-    if (err1!=0 || err0!=0 || arr.Length() || info[1][4] || info[1][7]=5)
+    if (err1!=0 || err0!=0 || arr.Length || info[1][4] || info[1][7]=5)
       Break
   }
-  SetBatchLines % bch
-  if (arr.Length())
+  if (arr.Length)
   {
     OutputX:=arr[1].x, OutputY:=arr[1].y, this.ok:=arr
     return arr
@@ -245,14 +234,13 @@ FindText(ByRef OutputX:="", ByRef OutputY:=""
 JoinText(arr, ini, info2, text, index, offsetX, offsetY
   , FindAll, dir, minX, minY, maxY, sx, sy, sw, sh)
 {
-  local
-  if !(Len:=text.Length()) || !info2.HasKey(key:=text[index])
+  if !(Len:=text.Length) || !info2.Has(key:=text[index])
     return 0
-  VarSetCapacity(allpos, ini.allpos_max*4), allpos_ptr:=&allpos
+  allpos:=Buffer(ini.allpos_max*4), allpos_ptr:=allpos.Ptr
   , zoomW:=ini.zoomW, zoomH:=ini.zoomH, mode:=ini.mode
   For i,j in info2[key]
   if (mode!=2 || key==j[10])
-  Loop % this.PicFind(ini, j, dir, sx, sy, (index=1 ? sw
+  Loop this.PicFind(ini, j, dir, sx, sy, (index=1 ? sw
   : Min(sx+offsetX+Floor(j[2]*zoomW),ini.sx+ini.sw)-sx), sh, allpos_ptr)
   {
     pos:=NumGet(allpos, 4*(A_Index-1), "uint")
@@ -285,9 +273,8 @@ JoinText(arr, ini, info2, text, index, offsetX, offsetY
 
 PicFind(ini, j, dir, sx, sy, sw, sh, allpos_ptr)
 {
-  local
-  static init, MyFunc
-  if !VarSetCapacity(init) && (init:="1")
+  static MyFunc:=""
+  if (!MyFunc)
   {
     x32:="VVdWU4HskAAAAIuEJMwAAAADhCTEAAAAg7wkpAAAAAWJRCQkD4QYBwAAi4wk4AAA"
     . "AIXJD46CDQAAi7wk3AAAAMcEJAAAAAAx7cdEJAwAAAAAx0QkCAAAAADHRCQQAAAA"
@@ -835,23 +822,20 @@ int __attribute__((__stdcall__)) PicFind(
 
 PicInfo(text)
 {
-  local
   if !InStr(text, "$")
     return
-  static init, info, bmp
-  if !VarSetCapacity(init) && (init:="1")
-    info:=[], bmp:=[]
+  static info:=Map(), bmp:=[]
   key:=(r:=StrLen(v:=Trim(text,"|")))<10000 ? v
     : DllCall("ntdll\RtlComputeCrc32", "uint",0
-    , "Ptr",&v, "uint",r*(1+!!A_IsUnicode), "uint")
-  if info.HasKey(key)
+    , "Ptr",StrPtr(v), "uint",r*2, "uint")
+  if info.Has(key)
     return info[key]
   comment:="", seterr:=err1:=err0:=0
   ; You Can Add Comment Text within The <>
-  if RegExMatch(v, "O)<([^>\n]*)>", r)
+  if RegExMatch(v, "<([^>\n]*)>", &r)
     v:=StrReplace(v,r[0]), comment:=Trim(r[1])
   ; You can Add two fault-tolerant in the [], separated by commas
-  if RegExMatch(v, "O)\[([^\]\n]*)]", r)
+  if RegExMatch(v, "\[([^\]\n]*)]", &r)
   {
     v:=StrReplace(v,r[0]), r:=StrSplit(r[1] ",", ",")
     , seterr:=1, err1:=this.Floor(r[1]), err0:=this.Floor(r[2])
@@ -871,28 +855,29 @@ PicInfo(text)
       ; the 0xRRGGBB1(+/-0xDRDGDB1) and 0xRRGGBB2(+/-0xDRDGDB) both transparent colors
       if !(hBM:=LoadPicture(v))
         return
-      this.GetBitmapWH(hBM, w, h)
+      this.GetBitmapWH(hBM, &w, &h)
       if (w<1 || h<1)
         return
-      hBM2:=this.CreateDIBSection(w, h, 32, Scan0)
+      hBM2:=this.CreateDIBSection(w, h, 32, &Scan0)
       this.CopyHBM(hBM2, 0, 0, hBM, 0, 0, w, h)
       DllCall("DeleteObject", "Ptr",hBM)
       if (!Scan0)
         return
-      arr:=StrSplit(color "/", "/"), arr.Pop(), n:=arr.Length()-1
-      bmp.Push(buf:=this.Buffer(w*h*4 + n*2*4)), v:=buf.Ptr, p:=v+w*h*4-4
+      arr:=StrSplit(color "/", "/"), arr.Pop(), n:=arr.Length-1
+      bmp.Push(buf:=Buffer(w*h*4 + n*2*4)), v:=buf.Ptr, p:=v+w*h*4-4
       DllCall("RtlMoveMemory", "Ptr",v, "Ptr",Scan0, "Ptr",w*h*4)
       DllCall("DeleteObject", "Ptr",hBM2)
-      tab:=Object("Black", "000000", "White", "FFFFFF"
+      tab:=Map(), tab.CaseSense:="Off"
+      , tab.Set("Black", "000000", "White", "FFFFFF"
       , "Red", "FF0000", "Green", "008000", "Blue", "0000FF"
       , "Yellow", "FFFF00", "Silver", "C0C0C0", "Gray", "808080"
       , "Teal", "008080", "Navy", "000080", "Aqua", "00FFFF"
       , "Olive", "808000", "Lime", "00FF00", "Fuchsia", "FF00FF"
       , "Purple", "800080", "Maroon", "800000")
-      Loop % n
+      Loop n
         c:=StrSplit(Trim(arr[1+A_Index],"-") "-" arr[1], "-"), v1:=c[1]
-        , NumPut(this.Floor("0x" (tab.HasKey(v1)?tab[v1]:v1)), 0|p+=4, "uint")
-        , NumPut(this.Floor("0x" c[2]), 0|p+=4, "uint")
+        , NumPut("uint", this.Floor("0x" (tab.Has(v1)?tab[v1]:v1)), p+=4)
+        , NumPut("uint", this.Floor("0x" c[2]), p+=4)
       color:=this.Floor("0x" arr[1])|0x1000000
     }
     else
@@ -906,9 +891,9 @@ PicInfo(text)
       ; Each point can take up to 10 sets of colors (xn/yn/RRGGBB1/.../RRGGBB10)
       color:=StrSplit(color "/", "/")[1]
       arr:=StrSplit(Trim(RegExReplace(v, "i)\s|0x"), ","), ",")
-      if !(n:=arr.Length())
+      if !(n:=arr.Length)
         return
-      bmp.Push(buf:=this.Buffer(n*22*4)), v:=buf.Ptr
+      bmp.Push(buf:=Buffer(n*22*4)), v:=buf.Ptr
       For k1,v1 in arr
       {
         r:=StrSplit(v1 "/", "/")
@@ -920,14 +905,14 @@ PicInfo(text)
       {
         r:=StrSplit(v1 "/", "/")
         , x:=this.Floor(r[1])-x1, y:=this.Floor(r[2])-y1
-        , n1:=Min(Max(r.Length()-3, 0), 10)
-        , NumPut(y<<16|x, 0|p:=v+(A_Index-1)*22*4, "uint")
-        , NumPut(n1, 0|p+=4, "uint")
-        Loop % n1
+        , n1:=Min(Max(r.Length-3, 0), 10)
+        , NumPut("uint", y<<16|x, p:=v+(A_Index-1)*22*4)
+        , NumPut("uint", n1, p+=4)
+        Loop n1
           k1:=(InStr(v1:=r[2+A_Index], "-")=1 ? 0x1000000:0)
           , c:=StrSplit(Trim(v1,"-") "-" color, "-")
-          , NumPut(this.Floor("0x" c[1])&0xFFFFFF|k1, 0|p+=4, "uint")
-          , NumPut(this.Floor("0x" c[2]), 0|p+=4, "uint")
+          , NumPut("uint", this.Floor("0x" c[1])&0xFFFFFF|k1, p+=4)
+          , NumPut("uint", this.Floor("0x" c[2]), p+=4)
       }
       color:=0, w:=x2-x1+1, h:=y2-y1+1
     }
@@ -938,8 +923,8 @@ PicInfo(text)
     , v:=this.base64tobit(r[2]), h:=StrLen(v)//w
     if (w<1 || h<1 || StrLen(v)!=w*h)
       return
-    arr:=StrSplit(color "/", "/"), arr.Pop(), n:=arr.Length()
-    , bmp.Push(buf:=this.Buffer(StrPut(v, "CP0") + n*2*4))
+    arr:=StrSplit(color "/", "/"), arr.Pop(), n:=arr.Length
+    , bmp.Push(buf:=Buffer(StrPut(v, "CP0") + n*2*4))
     , StrPut(v, buf.Ptr, "CP0"), v:=buf.Ptr, p:=v+w*h-4
     , color:=this.Floor(arr[1])
     if (mode=1)
@@ -949,8 +934,8 @@ PicInfo(text)
         , r:=StrSplit(v1 "@", "@"), x:=this.Floor(r[2])
         , x:=(x<=0||x>1?1:x), x:=Floor(4606*255*255*(1-x)*(1-x))
         , c:=StrSplit(Trim(r[1],"-") "-" Format("{:X}",x), "-")
-        , NumPut(this.Floor("0x" c[1])&0xFFFFFF|k1, 0|p+=4, "uint")
-        , NumPut(this.Floor("0x" c[2]), 0|p+=4, "uint")
+        , NumPut("uint", this.Floor("0x" c[1])&0xFFFFFF|k1, p+=4)
+        , NumPut("uint", this.Floor("0x" c[2]), p+=4)
     }
     else if (mode=4)
     {
@@ -962,23 +947,13 @@ PicInfo(text)
   return info[key]:=[v, w, h, seterr, err1, err0, mode, color, n, comment]
 }
 
-Buffer(size, FillByte:="")
+GetBitsFromScreen(&x:=0, &y:=0, &w:=0, &h:=0
+  , ScreenShot:=1, &zx:=0, &zy:=0, &zw:=0, &zh:=0)
 {
-  local
-  buf:={}, buf.SetCapacity("_key", size), p:=buf.GetAddress("_key")
-  , (FillByte!="" && DllCall("RtlFillMemory","Ptr",p,"Ptr",size,"uchar",FillByte))
-  , buf.Ptr:=p, buf.Size:=size
-  return buf
-}
-
-GetBitsFromScreen(ByRef x:=0, ByRef y:=0, ByRef w:=0, ByRef h:=0
-  , ScreenShot:=1, ByRef zx:=0, ByRef zy:=0, ByRef zw:=0, ByRef zh:=0)
-{
-  local
-  static init, CAPTUREBLT
-  if !VarSetCapacity(init) && (init:="1")  ; thanks Descolada
+  static CAPTUREBLT:=""
+  if (CAPTUREBLT="")  ; thanks Descolada
   {
-    DllCall("Dwmapi\DwmIsCompositionEnabled", "Int*",i:=0)
+    DllCall("Dwmapi\DwmIsCompositionEnabled", "Int*", &i:=0)
     CAPTUREBLT:=i ? 0 : 0x40000000
   }
   (!IsObject(this.bits) && this.bits:={Scan0:0, hBM:0, oldzw:0, oldzh:0})
@@ -990,39 +965,39 @@ GetBitsFromScreen(ByRef x:=0, ByRef y:=0, ByRef w:=0, ByRef h:=0
     , h:=Min(y+h,zy+zh), y:=Max(y,zy), h-=y
     return bits
   }
-  bch:=A_BatchLines, cri:=A_IsCritical
+  cri:=A_IsCritical
   Critical
   bits.BindWindow:=id:=this.BindWindow(0,0,1)
   if (id)
   {
-    WinGet, id, ID, ahk_id %id%
-    WinGetPos, zx, zy, zw, zh, ahk_id %id%
+    Try
+      WinGetPos &zx, &zy, &zw, &zh, id
+    Catch
+      id:=0
   }
   if (!id)
   {
-    SysGet, zx, 76
-    SysGet, zy, 77
-    SysGet, zw, 78
-    SysGet, zh, 79
+    zx:=SysGet(76)
+    , zy:=SysGet(77)
+    , zw:=SysGet(78)
+    , zh:=SysGet(79)
   }
   this.UpdateBits(bits, zx, zy, zw, zh)
   , w:=Min(x+w,zx+zw), x:=Max(x,zx), w-=x
   , h:=Min(y+h,zy+zh), y:=Max(y,zy), h-=y
   if (!ScreenShot || w<1 || h<1 || !bits.hBM)
   {
-    Critical % cri
-    SetBatchLines % bch
+    Critical cri
     return bits
   }
-  if IsFunc(k:="GetBitsFromScreen2")
-    && %k%(bits, x-zx, y-zy, w, h)
+  if IsSet(GetBitsFromScreen2) && (GetBitsFromScreen2 is Func)
+    && GetBitsFromScreen2(bits, x-zx, y-zy, w, h)
   {
     ; Get the bind window use bits.BindWindow
     ; Each small range of data obtained from DXGI must be
     ; copied to the screenshot cache using FindText().CopyBits()
     zx:=bits.zx, zy:=bits.zy, zw:=bits.zw, zh:=bits.zh
-    Critical % cri
-    SetBatchLines % bch
+    Critical cri
     return bits
   }
   mDC:=DllCall("CreateCompatibleDC", "Ptr",0, "Ptr")
@@ -1063,18 +1038,16 @@ GetBitsFromScreen(ByRef x:=0, ByRef y:=0, ByRef w:=0, ByRef h:=0
     this.CaptureCursor(mDC, zx, zy, zw, zh)
   DllCall("SelectObject", "Ptr",mDC, "Ptr",oBM)
   DllCall("DeleteDC", "Ptr",mDC)
-  Critical % cri
-  SetBatchLines % bch
+  Critical cri
   return bits
 }
 
 UpdateBits(bits, zx, zy, zw, zh)
 {
-  local
   if (zw>bits.oldzw || zh>bits.oldzh || !bits.hBM)
   {
     Try DllCall("DeleteObject", "Ptr",bits.hBM)
-    bits.hBM:=this.CreateDIBSection(zw, zh, bpp:=32, ppvBits)
+    bits.hBM:=this.CreateDIBSection(zw, zh, bpp:=32, &ppvBits)
     , bits.Scan0:=(!bits.hBM ? 0:ppvBits)
     , bits.Stride:=((zw*bpp+31)//32)*4
     , bits.oldzw:=zw, bits.oldzh:=zh
@@ -1082,27 +1055,22 @@ UpdateBits(bits, zx, zy, zw, zh)
   bits.zx:=zx, bits.zy:=zy, bits.zw:=zw, bits.zh:=zh
 }
 
-CreateDIBSection(w, h, bpp:=32, ByRef ppvBits:=0)
+CreateDIBSection(w, h, bpp:=32, &ppvBits:=0)
 {
-  local
-  VarSetCapacity(bi, 40, 0), NumPut(40, bi, 0, "int")
-  , NumPut(w, bi, 4, "int"), NumPut(-h, bi, 8, "int")
-  , NumPut(1, bi, 12, "short"), NumPut(bpp, bi, 14, "short")
-  return DllCall("CreateDIBSection", "Ptr",0, "Ptr",&bi
-    , "int",0, "Ptr*",ppvBits:=0, "Ptr",0, "int",0, "Ptr")
+  NumPut("int",40, "int",w, "int",-h, "short",1, "short",bpp, bi:=Buffer(40,0))
+  return DllCall("CreateDIBSection", "Ptr",0, "Ptr",bi
+    , "int",0, "Ptr*",&ppvBits:=0, "Ptr",0, "int",0, "Ptr")
 }
 
-GetBitmapWH(hBM, ByRef w, ByRef h)
+GetBitmapWH(hBM, &w, &h)
 {
-  local
-  VarSetCapacity(bm, size:=(A_PtrSize=8 ? 32:24), 0)
-  , DllCall("GetObject", "Ptr",hBM, "int",size, "Ptr",&bm)
+  bm:=Buffer(size:=(A_PtrSize=8 ? 32:24), 0)
+  , DllCall("GetObject", "Ptr",hBM, "int",size, "Ptr",bm)
   , w:=NumGet(bm,4,"int"), h:=Abs(NumGet(bm,8,"int"))
 }
 
 CopyHBM(hBM1, x1, y1, hBM2, x2, y2, w, h, Clear:=0, trans:=0, alpha:=255)
 {
-  local
   if (w<1 || h<1 || !hBM1 || !hBM2)
     return
   mDC1:=DllCall("CreateCompatibleDC", "Ptr",0, "Ptr")
@@ -1126,11 +1094,10 @@ CopyHBM(hBM1, x1, y1, hBM2, x2, y2, w, h, Clear:=0, trans:=0, alpha:=255)
 
 CopyBits(Scan01,Stride1,x1,y1,Scan02,Stride2,x2,y2,w,h,Reverse:=0)
 {
-  local
   if (w<1 || h<1 || !Scan01 || !Scan02)
     return
-  static init, MFCopyImage
-  if !VarSetCapacity(init) && (init:="1")
+  static init:=0, MFCopyImage
+  if (!init && init:=1)
   {
     MFCopyImage:=DllCall("GetProcAddress", "Ptr"
     , DllCall("LoadLibrary", "Str","Mfplat.dll", "Ptr")
@@ -1143,23 +1110,20 @@ CopyBits(Scan01,Stride1,x1,y1,Scan02,Stride2,x2,y2,w,h,Reverse:=0)
       , "Ptr",Scan02+y2*Stride2+x2*4, "int",Stride2
       , "uint",w*4, "uint",h)
   }
-  ListLines % (lls:=A_ListLines)?0:0
-  SetBatchLines % (bch:=A_BatchLines)?"-1":"-1"
+  ListLines (lls:=A_ListLines)?0:0
   p1:=Scan01+(y1-1)*Stride1+x1*4
   , p2:=Scan02+(y2-1)*Stride2+x2*4, w*=4
   , (Reverse) && (p2+=(h+1)*Stride2, Stride2:=-Stride2)
-  Loop % h
+  Loop h
     DllCall("RtlMoveMemory","Ptr",p1+=Stride1,"Ptr",p2+=Stride2,"Ptr",w)
-  SetBatchLines % bch
-  ListLines % lls
+  ListLines lls
 }
 
 DrawHBM(hBM, lines)
 {
-  local
   mDC:=DllCall("CreateCompatibleDC", "Ptr",0, "Ptr")
   oBM:=DllCall("SelectObject", "Ptr",mDC, "Ptr",hBM, "Ptr")
-  oldc:="", brush:=0, VarSetCapacity(rect, 16)
+  oldc:="", brush:=0, rect:=Buffer(16)
   For k,v in lines  ; [ [x, y, w, h, color] ]
   if IsObject(v)
   {
@@ -1169,9 +1133,9 @@ DrawHBM(hBM, lines)
       DllCall("DeleteObject", "Ptr",brush)
       brush:=DllCall("CreateSolidBrush", "uint",BGR, "Ptr")
     }
-    DllCall("SetRect", "Ptr",&rect, "int",v[1], "int",v[2]
+    DllCall("SetRect", "Ptr",rect, "int",v[1], "int",v[2]
       , "int",v[1]+v[3], "int",v[2]+v[4])
-    DllCall("FillRect", "Ptr",mDC, "Ptr",&rect, "Ptr",brush)
+    DllCall("FillRect", "Ptr",mDC, "Ptr",rect, "Ptr",brush)
   }
   DllCall("DeleteObject", "Ptr",brush)
   DllCall("SelectObject", "Ptr",mDC, "Ptr",oBM)
@@ -1184,7 +1148,6 @@ DrawHBM(hBM, lines)
 
 BindWindow(bind_id:=0, bind_mode:=0, get_id:=0, get_mode:=0)
 {
-  local
   (!IsObject(this.bind) && this.bind:={id:0, mode:0, oldStyle:0})
   , bind:=this.bind
   if (get_id)
@@ -1197,13 +1160,13 @@ BindWindow(bind_id:=0, bind_mode:=0, get_id:=0, get_mode:=0)
     , bind.mode:=bind_mode, bind.oldStyle:=0
     if (bind_mode & 1)
     {
-      WinGet, i, ExStyle, ahk_id %bind_id%
+      i:=WinGetExStyle(bind_id)
       bind.oldStyle:=i
-      WinSet, Transparent, 255, ahk_id %bind_id%
+      WinSetTransparent(255, bind_id)
       Loop 30
       {
         Sleep 100
-        WinGet, i, Transparent, ahk_id %bind_id%
+        i:=WinGetTransparent(bind_id)
       }
       Until (i=255)
     }
@@ -1212,7 +1175,7 @@ BindWindow(bind_id:=0, bind_mode:=0, get_id:=0, get_mode:=0)
   {
     bind_id:=bind.id
     if (bind.mode & 1)
-      WinSet, ExStyle, % bind.oldStyle, ahk_id %bind_id%
+      WinSetExStyle(bind.oldStyle, bind_id)
     bind.id:=0, bind.mode:=0, bind.oldStyle:=0
   }
 }
@@ -1222,7 +1185,6 @@ BindWindow(bind_id:=0, bind_mode:=0, get_id:=0, get_mode:=0)
 
 CaptureCursor(hDC:=0, zx:=0, zy:=0, zw:=0, zh:=0, get_cursor:=0)
 {
-  local
   if (get_cursor)
     return this.Cursor
   if (hDC=1 || hDC=0) && (zw=0)
@@ -1230,16 +1192,16 @@ CaptureCursor(hDC:=0, zx:=0, zy:=0, zw:=0, zh:=0, get_cursor:=0)
     this.Cursor:=hDC
     return
   }
-  VarSetCapacity(mi, 40, 0), NumPut(16+A_PtrSize, mi, "int")
-  DllCall("GetCursorInfo", "Ptr",&mi)
+  mi:=Buffer(40, 0), NumPut("int", 16+A_PtrSize, mi)
+  DllCall("GetCursorInfo", "Ptr",mi)
   bShow:=NumGet(mi, 4, "int")
   hCursor:=NumGet(mi, 8, "Ptr")
   x:=NumGet(mi, 8+A_PtrSize, "int")
   y:=NumGet(mi, 12+A_PtrSize, "int")
   if (!bShow) || (x<zx || y<zy || x>=zx+zw || y>=zy+zh)
     return
-  VarSetCapacity(ni, 40, 0)
-  DllCall("GetIconInfo", "Ptr",hCursor, "Ptr",&ni)
+  ni:=Buffer(40, 0)
+  DllCall("GetIconInfo", "Ptr",hCursor, "Ptr",ni)
   xCenter:=NumGet(ni, 4, "int")
   yCenter:=NumGet(ni, 8, "int")
   hBMMask:=NumGet(ni, (A_PtrSize=8?16:12), "Ptr")
@@ -1253,11 +1215,10 @@ CaptureCursor(hDC:=0, zx:=0, zy:=0, zw:=0, zh:=0, get_cursor:=0)
 
 MCode(hex)
 {
-  local
   flag:=((hex~="[^\s\da-fA-F]") ? 1:4), len:=0
   Loop 2
     if !DllCall("crypt32\CryptStringToBinary", "Str",hex, "uint",0, "uint",flag
-    , "Ptr",(A_Index=1?0:(p:=this.Buffer(len)).Ptr), "uint*",len, "Ptr",0, "Ptr",0)
+    , "Ptr",(A_Index=1?0:(p:=Buffer(len)).Ptr), "uint*",&len, "Ptr",0, "Ptr",0)
       return
   if DllCall("VirtualProtect", "Ptr",p.Ptr, "Ptr",len, "uint",0x40, "uint*",0)
     return p
@@ -1265,49 +1226,43 @@ MCode(hex)
 
 bin2hex(addr, size, base64:=1)
 {
-  local
   flag:=(base64 ? 1:4)|0x40000000, len:=0
   Loop 2
     DllCall("crypt32\CryptBinaryToString", "Ptr",addr, "uint",size, "uint",flag
-    , "Ptr",(A_Index=1?0:(p:=this.Buffer(len*2)).Ptr), "uint*",len)
+    , "Ptr",(A_Index=1?0:(p:=Buffer(len*2)).Ptr), "uint*",&len)
   return RegExReplace(StrGet(p.Ptr, len), "\s+")
 }
 
 base64tobit(s)
 {
-  local
-  ListLines % (lls:=A_ListLines)?0:0
+  ListLines (lls:=A_ListLines)?0:0
   Chars:="0123456789+/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-  SetFormat, IntegerFast, d
   Loop Parse, Chars
     if InStr(s, A_LoopField, 1)
       s:=RegExReplace(s, "[" A_LoopField "]", ((i:=A_Index-1)>>5&1)
       . (i>>4&1) . (i>>3&1) . (i>>2&1) . (i>>1&1) . (i&1))
   s:=RegExReplace(RegExReplace(s,"[^01]+"),"10*$")
-  ListLines % lls
+  ListLines lls
   return s
 }
 
 bit2base64(s)
 {
-  local
-  ListLines % (lls:=A_ListLines)?0:0
+  ListLines (lls:=A_ListLines)?0:0
   s:=RegExReplace(s,"[^01]+")
   s.=SubStr("100000",1,6-Mod(StrLen(s),6))
   s:=RegExReplace(s,".{6}","|$0")
   Chars:="0123456789+/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-  SetFormat, IntegerFast, d
   Loop Parse, Chars
     s:=StrReplace(s, "|" . ((i:=A_Index-1)>>5&1)
     . (i>>4&1) . (i>>3&1) . (i>>2&1) . (i>>1&1) . (i&1), A_LoopField)
-  ListLines % lls
+  ListLines lls
   return s
 }
 
 ASCII(s)
 {
-  local
-  if RegExMatch(s, "O)\$(\d+)\.([\w+/]+)", r)
+  if RegExMatch(s, "\$(\d+)\.([\w+/]+)", &r)
   {
     s:=RegExReplace(this.base64tobit(r[2]),".{" r[1] "}","$0`n")
     s:=StrReplace(StrReplace(s,"0","_"),"1","0")
@@ -1322,14 +1277,13 @@ ASCII(s)
 
 PicLib(comments, add_to_Lib:=0, index:=1)
 {
-  local
-  (!IsObject(this.Lib) && this.Lib:=[]), Lib:=this.Lib
-  , (!Lib.HasKey(index) && Lib[index]:=[]), Lib:=Lib[index]
+  (!IsObject(this.Lib) && this.Lib:=Map()), Lib:=this.Lib
+  , (!Lib.Has(index) && Lib[index]:=Map()), Lib:=Lib[index]
   if (add_to_Lib)
   {
-    re:="O)<([^>\n]*)>[^$\n]+\$[^""\r\n]+"
-    Loop Parse, comments, |
-      if RegExMatch(A_LoopField, re, r)
+    re:="<([^>\n]*)>[^$\n]+\$[^`"'\r\n]+"
+    Loop Parse, comments, "|"
+      if RegExMatch(A_LoopField, re, &r)
       {
         s1:=Trim(r[1]), s2:=""
         Loop Parse, s1
@@ -1340,12 +1294,12 @@ PicLib(comments, add_to_Lib:=0, index:=1)
   else
   {
     Text:=""
-    Loop Parse, comments, |
+    Loop Parse, comments, "|"
     {
       s1:=Trim(A_LoopField), s2:=""
       Loop Parse, s1
         s2.=Format("_{:d}", Ord(A_LoopField))
-      (Lib.HasKey(s2)) && Text.="|" Lib[s2]
+      (Lib.Has(s2)) && Text.="|" Lib[s2]
     }
     return Text
   }
@@ -1363,8 +1317,7 @@ PicN(Number, index:=1)
 
 PicX(Text)
 {
-  local
-  if !RegExMatch(Text, "O)(<[^$\n]+)\$(\d+)\.([\w+/]+)", r)
+  if !RegExMatch(Text, "(<[^$\n]+)\$(\d+)\.([\w+/]+)", &r)
     return Text
   v:=this.base64tobit(r[3]), Text:=""
   c:=StrLen(StrReplace(v,"0"))<=StrLen(v)//2 ? "1":"0"
@@ -1397,8 +1350,7 @@ ScreenShot(x1:=0, y1:=0, x2:=0, y2:=0)
 
 GetColor(x, y, fmt:=1)
 {
-  local
-  bits:=this.GetBitsFromScreen(,,,,0,zx,zy,zw,zh), x-=zx, y-=zy
+  bits:=this.GetBitsFromScreen(,,,,0,&zx,&zy,&zw,&zh), x-=zx, y-=zy
   , c:=(x>=0 && x<zw && y>=0 && y<zh && bits.Scan0)
   ? NumGet(bits.Scan0+y*bits.Stride+x*4,"uint") : 0xFFFFFF
   return (fmt ? Format("0x{:06X}",c&0xFFFFFF) : c)
@@ -1408,10 +1360,9 @@ GetColor(x, y, fmt:=1)
 
 SetColor(x, y, color:=0x000000)
 {
-  local
-  bits:=this.GetBitsFromScreen(,,,,0,zx,zy,zw,zh), x-=zx, y-=zy
+  bits:=this.GetBitsFromScreen(,,,,0,&zx,&zy,&zw,&zh), x-=zx, y-=zy
   if (x>=0 && x<zw && y>=0 && y<zh && bits.Scan0)
-    NumPut(color, bits.Scan0+y*bits.Stride+x*4, "uint")
+    NumPut("uint", color, bits.Scan0+y*bits.Stride+x*4)
 }
 
 ; Identify a line of text or verification code
@@ -1424,7 +1375,6 @@ SetColor(x, y, color:=0x000000)
 
 Ocr(ok, offsetX:=20, offsetY:=20, overlapW:=0)
 {
-  local
   ocr_Text:=ocr_X:=ocr_Y:=min_X:=dx:=""
   For k,v in ok
     x:=v.1
@@ -1463,7 +1413,6 @@ Ocr(ok, offsetX:=20, offsetY:=20, overlapW:=0)
 
 Sort(ok, dy:=10)
 {
-  local
   if !IsObject(ok)
     return ok
   s:="", n:=150000, ypos:=[]
@@ -1481,9 +1430,9 @@ Sort(ok, dy:=10)
     s.=(y*n+x) "." k "|"
   }
   s:=Trim(s,"|")
-  Sort, s, N D|
+  s:=Sort(s, "N D|")
   ok2:=[]
-  Loop Parse, s, |
+  Loop Parse, s, "|"
     ok2.Push( ok[StrSplit(A_LoopField,".")[2]] )
   return ok2
 }
@@ -1492,16 +1441,15 @@ Sort(ok, dy:=10)
 
 Sort2(ok, px, py)
 {
-  local
   if !IsObject(ok)
     return ok
   s:=""
   For k,v in ok
     s.=((v.x-px)**2+(v.y-py)**2) "." k "|"
   s:=Trim(s,"|")
-  Sort, s, N D|
+  s:=Sort(s, "N D|")
   ok2:=[]
-  Loop Parse, s, |
+  Loop Parse, s, "|"
     ok2.Push( ok[StrSplit(A_LoopField,".")[2]] )
   return ok2
 }
@@ -1510,7 +1458,6 @@ Sort2(ok, px, py)
 
 Sort3(ok, dir:=1)
 {
-  local
   if !IsObject(ok)
     return ok
   s:="", n:=150000
@@ -1525,9 +1472,9 @@ Sort3(ok, dir:=1)
     : dir=7 ? -x*n+y
     : dir=8 ? -x*n-y : y*n+x) "." k "|"
   s:=Trim(s,"|")
-  Sort, s, N D|
+  s:=Sort(s, "N D|")
   ok2:=[]
-  Loop Parse, s, |
+  Loop Parse, s, "|"
     ok2.Push( ok[StrSplit(A_LoopField,".")[2]] )
   return ok2
 }
@@ -1536,10 +1483,9 @@ Sort3(ok, dir:=1)
 
 MouseTip(x:="", y:="", w:=10, h:=10, d:=3)
 {
-  local
   if (x="")
   {
-    VarSetCapacity(pt,16,0), DllCall("GetCursorPos","Ptr",&pt)
+    pt:=Buffer(16,0), DllCall("GetCursorPos", "Ptr",pt)
     x:=NumGet(pt,0,"uint"), y:=NumGet(pt,4,"uint")
   }
   Loop 4
@@ -1554,17 +1500,14 @@ MouseTip(x:="", y:="", w:=10, h:=10, d:=3)
 
 RangeTip(x:="", y:="", w:="", h:="", color:="Red", d:=3)
 {
-  local
-  ListLines % (lls:=A_ListLines)?0:0
-  static init, Range
-  if !VarSetCapacity(init) && (init:="1")
-    Range:=[0,0,0,0]
+  ListLines (lls:=A_ListLines)?0:0
+  static Range:=[0,0,0,0]
   if (x="")
   {
     Loop 4
       if (Range[i:=A_Index])
         Range[i].Destroy(), Range[i]:=""
-    ListLines % lls
+    ListLines lls
     return
   }
   if (!Range[1])
@@ -1584,7 +1527,7 @@ RangeTip(x:="", y:="", w:="", h:="", color:="Red", d:=3)
     Range[i].BackColor:=color
     Range[i].Show("NA x" x1 " y" y1 " w" w1 " h" h1)
   }
-  ListLines % lls
+  ListLines lls
 }
 
 State(key)
@@ -1596,9 +1539,8 @@ State(key)
 
 GetRange(ww:=25, hh:=8, key:="RButton")
 {
-  local
-  static init, KeyOff, hk
-  if !VarSetCapacity(init) && (init:="1")
+  static KeyOff:="", hk
+  if (!KeyOff)
     KeyOff:=this.GetRange.Bind(this, "Off")
   if (ww=="Off")
     return hk:=Trim(A_ThisHotkey, "*")
@@ -1609,30 +1551,30 @@ GetRange(ww:=25, hh:=8, key:="RButton")
   _Gui.Show("NA x0 y0 w0 h0")
   ;---------------------
   if GetKeyState("Ctrl")
-    Send {Ctrl Up}
-  Hotkey, IfWinExist, GetRange_HotkeyIf
+    Send "{Ctrl Up}"
+  HotIfWinExist "GetRange_HotkeyIf"
   keys:=key "|Up|Down|Left|Right"
   For k,v in StrSplit(keys, "|")
   {
     if GetKeyState(v)
-      Send {%v% Up}
-    Hotkey, *%v%, %KeyOff%, On UseErrorLevel
+      Send "{" v " Up}"
+    Try Hotkey "*" v, KeyOff, "On"
   }
-  Hotkey, IfWinExist
+  HotIfWinExist
   ;---------------------
-  Critical % (cri:=A_IsCritical)?"Off":"Off"
-  CoordMode, Mouse
+  Critical (cri:=A_IsCritical)?"Off":"Off"
+  CoordMode "Mouse"
   tip:=this.Lang("s5")
   hk:="", oldx:=oldy:="", keydown:=0
   Loop
   {
     Sleep 50
-    MouseGetPos, x2, y2
+    MouseGetPos &x2, &y2
     if (hk=key) || this.State(key) || this.State("Ctrl")
     {
       keydown++
       if (keydown=1)
-        MouseGetPos, x1, y1, Bind_ID
+        MouseGetPos &x1, &y1, &Bind_ID
       timeout:=A_TickCount+3000
       While (A_TickCount<timeout) && (this.State(key) || this.State("Ctrl"))
         Sleep 50
@@ -1653,65 +1595,63 @@ GetRange(ww:=25, hh:=8, key:="RButton")
     if (oldx=x2 && oldy=y2)
       Continue
     oldx:=x2, oldy:=y2
-    ToolTip % "x: " x " y: " y "`n" tip
+    ToolTip "x: " x " y: " y "`n" tip
   }
   ToolTip
   this.RangeTip()
-  Hotkey, IfWinExist, GetRange_HotkeyIf
+  HotIfWinExist "GetRange_HotkeyIf"
   For k,v in StrSplit(keys, "|")
-    Hotkey, *%v%, %KeyOff%, Off UseErrorLevel
-  Hotkey, IfWinExist
+    Try Hotkey "*" v, KeyOff, "Off"
+  HotIfWinExist
   GetRange_HotkeyIf.Destroy()
-  Critical % cri
+  Critical cri
   return [x-ww, y-hh, x+ww, y+hh, Bind_ID]
 }
 
 GetRange2(key:="LButton")
 {
-  local
   FindText_GetRange:=_Gui:=Gui()
   _Gui.Opt("+LastFound +AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000")
   _Gui.BackColor:="White"
-  WinSet, Transparent, 10
-  this.GetBitsFromScreen(,,,,0,x,y,w,h)
+  WinSetTransparent(10)
+  this.GetBitsFromScreen(,,,,0,&x,&y,&w,&h)
   _Gui.Title:="FindText_GetRange"
   _Gui.Show("NA x" x " y" y " w" w " h" h)
-  CoordMode, Mouse
+  CoordMode "Mouse"
   tip:=this.Lang("s7"), oldx:=oldy:=""
   Loop
   {
     Sleep 50
-    MouseGetPos, x1, y1
+    MouseGetPos &x1, &y1
     if (oldx=x1 && oldy=y1)
       Continue
     oldx:=x1, oldy:=y1
-    ToolTip % "x: " x1 " y: " y1 " w: 0 h: 0`n" tip
+    ToolTip "x: " x1 " y: " y1 " w: 0 h: 0`n" tip
   }
   Until this.State(key) || this.State("Ctrl")
   Loop
   {
     Sleep 50
-    MouseGetPos, x2, y2
+    MouseGetPos &x2, &y2
     x:=Min(x1,x2), y:=Min(y1,y2), w:=Abs(x2-x1)+1, h:=Abs(y2-y1)+1
     this.RangeTip(x, y, w, h, (A_MSec<500 ? "Red":"Blue"))
     if (oldx=x2 && oldy=y2)
       Continue
     oldx:=x2, oldy:=y2
-    ToolTip % "x: " x " y: " y " w: " w " h: " h "`n" tip
+    ToolTip "x: " x " y: " y " w: " w " h: " h "`n" tip
   }
   Until !(this.State(key) || this.State("Ctrl"))
   ToolTip
   this.RangeTip()
   FindText_GetRange.Destroy()
-  Clipboard:=x "," y "," (x+w-1) "," (y+h-1)
+  A_Clipboard:=x "," y "," (x+w-1) "," (y+h-1)
   return [x, y, x+w-1, y+h-1]
 }
 
-BitmapFromScreen(ByRef x:=0, ByRef y:=0, ByRef w:=0, ByRef h:=0
-  , ScreenShot:=1, ByRef zx:=0, ByRef zy:=0, ByRef zw:=0, ByRef zh:=0)
+BitmapFromScreen(&x:=0, &y:=0, &w:=0, &h:=0
+  , ScreenShot:=1, &zx:=0, &zy:=0, &zw:=0, &zh:=0)
 {
-  local
-  bits:=this.GetBitsFromScreen(x,y,w,h,ScreenShot,zx,zy,zw,zh)
+  bits:=this.GetBitsFromScreen(&x,&y,&w,&h,ScreenShot,&zx,&zy,&zw,&zh)
   if (w<1 || h<1 || !bits.hBM)
     return
   hBM:=this.CreateDIBSection(w, h)
@@ -1724,13 +1664,12 @@ BitmapFromScreen(ByRef x:=0, ByRef y:=0, ByRef w:=0, ByRef h:=0
 
 SavePic(file:=0, x1:=0, y1:=0, x2:=0, y2:=0, ScreenShot:=1)
 {
-  local
   x1:=this.Floor(x1), y1:=this.Floor(y1), x2:=this.Floor(x2), y2:=this.Floor(y2)
   if (x1=0 && y1=0 && x2=0 && y2=0)
     n:=150000, x:=y:=-n, w:=h:=2*n
   else
     x:=Min(x1,x2), y:=Min(y1,y2), w:=Abs(x2-x1)+1, h:=Abs(y2-y1)+1
-  hBM:=this.BitmapFromScreen(x, y, w, h, ScreenShot)
+  hBM:=this.BitmapFromScreen(&x, &y, &w, &h, ScreenShot)
   this.SaveBitmapToFile(file, hBM)
   DllCall("DeleteObject", "Ptr",hBM)
 }
@@ -1740,22 +1679,21 @@ SavePic(file:=0, x1:=0, y1:=0, x2:=0, y2:=0, ScreenShot:=1)
 
 SaveBitmapToFile(file, hBM_or_file, x:=0, y:=0, w:=0, h:=0)
 {
-  local
-  if hBM_or_file is number
+  if IsNumber(hBM_or_file)
     hBM_or_file:="HBITMAP:*" hBM_or_file
   if !hBM:=DllCall("CopyImage", "Ptr",LoadPicture(hBM_or_file)
   , "int",0, "int",0, "int",0, "uint",0x2008)
     return
   if (file) || (w!=0 && h!=0)
   {
-    (w=0 || h=0) && this.GetBitmapWH(hBM, w, h)
+    (w=0 || h=0) && this.GetBitmapWH(hBM, &w, &h)
     hBM2:=this.CreateDIBSection(w, -h, bpp:=(file ? 24 : 32))
     this.CopyHBM(hBM2, 0, 0, hBM, x, y, w, h)
     DllCall("DeleteObject", "Ptr",hBM), hBM:=hBM2
   }
-  VarSetCapacity(dib, dib_size:=(A_PtrSize=8 ? 104:84), 0)
-  , DllCall("GetObject", "Ptr",hBM, "int",dib_size, "Ptr",&dib)
-  , pbi:=&dib+(bitmap_size:=A_PtrSize=8 ? 32:24)
+  dib:=Buffer(dib_size:=(A_PtrSize=8 ? 104:84), 0)
+  , DllCall("GetObject", "Ptr",hBM, "int",dib_size, "Ptr",dib)
+  , pbi:=dib.Ptr+(bitmap_size:=A_PtrSize=8 ? 32:24)
   , size:=NumGet(pbi+20, "uint"), pBits:=NumGet(pbi-A_PtrSize, "Ptr")
   if (!file)
   {
@@ -1772,9 +1710,9 @@ SaveBitmapToFile(file, hBM_or_file, x:=0, y:=0, w:=0, h:=0)
   else
   {
     if InStr(file,"\") && !FileExist(dir:=RegExReplace(file,"[^\\]*$"))
-      Try FileCreateDir, % dir
-    VarSetCapacity(bf, 14, 0), NumPut(0x4D42, bf, "short")
-    NumPut(54+size, bf, 2, "uint"), NumPut(54, bf, 10, "uint")
+      Try DirCreate(dir)
+    bf:=Buffer(14, 0), NumPut("short", 0x4D42, bf)
+    NumPut("uint", 54+size, bf, 2), NumPut("uint", 54, bf, 10)
     f:=FileOpen(file, "w"), f.RawWrite(bf, 14)
     , f.RawWrite(pbi+0, 40), f.RawWrite(pBits+0, size), f.Close()
   }
@@ -1783,9 +1721,8 @@ SaveBitmapToFile(file, hBM_or_file, x:=0, y:=0, w:=0, h:=0)
 
 ; Show the saved Picture file
 
-ShowPic(file:="", show:=1, ByRef x:="", ByRef y:="", ByRef w:="", ByRef h:="")
+ShowPic(file:="", show:=1, &x:="", &y:="", &w:="", &h:="")
 {
-  local
   if (file="")
   {
     this.ShowScreenShot()
@@ -1793,8 +1730,8 @@ ShowPic(file:="", show:=1, ByRef x:="", ByRef y:="", ByRef w:="", ByRef h:="")
   }
   if !(hBM:=LoadPicture(file))
     return
-  this.GetBitmapWH(hBM, w, h)
-  bits:=this.GetBitsFromScreen(,,,,0,x,y,zw,zh)
+  this.GetBitmapWH(hBM, &w, &h)
+  bits:=this.GetBitsFromScreen(,,,,0,&x,&y,&zw,&zh)
   this.UpdateBits(bits, x, y, Max(w,zw), Max(h,zh))
   this.CopyHBM(bits.hBM, 0, 0, hBM, 0, 0, w, h)
   DllCall("DeleteObject", "Ptr",hBM)
@@ -1807,10 +1744,7 @@ ShowPic(file:="", show:=1, ByRef x:="", ByRef y:="", ByRef w:="", ByRef h:="")
 
 ShowScreenShot(x1:=0, y1:=0, x2:=0, y2:=0, ScreenShot:=1)
 {
-  local
-  static init, hPic, oldx, oldy, oldw, oldh, FindText_Screen
-  if !VarSetCapacity(init) && (init:="1")
-    FindText_Screen:=""
+  static hPic, oldx, oldy, oldw, oldh, FindText_Screen:=""
   x1:=this.Floor(x1), y1:=this.Floor(y1), x2:=this.Floor(x2), y2:=this.Floor(y2)
   if (x1=0 && y1=0 && x2=0 && y2=0)
   {
@@ -1819,7 +1753,7 @@ ShowScreenShot(x1:=0, y1:=0, x2:=0, y2:=0, ScreenShot:=1)
     return
   }
   x:=Min(x1,x2), y:=Min(y1,y2), w:=Abs(x2-x1)+1, h:=Abs(y2-y1)+1
-  if !hBM:=this.BitmapFromScreen(x,y,w,h,ScreenShot)
+  if !hBM:=this.BitmapFromScreen(&x,&y,&w,&h,ScreenShot)
     return
   ;---------------
   if (!FindText_Screen)
@@ -1845,7 +1779,6 @@ ShowScreenShot(x1:=0, y1:=0, x2:=0, y2:=0, ScreenShot:=1)
 
 BitmapToWindow(hwnd, x1, y1, hBM, x2, y2, w, h)
 {
-  local
   mDC:=DllCall("CreateCompatibleDC", "Ptr",0, "Ptr")
   oBM:=DllCall("SelectObject", "Ptr",mDC, "Ptr",hBM, "Ptr")
   hDC:=DllCall("GetDC", "Ptr",hwnd, "Ptr")
@@ -1859,26 +1792,23 @@ BitmapToWindow(hwnd, x1, y1, hBM, x2, y2, w, h)
 ; Quickly get the search data of screen image
 
 GetTextFromScreen(x1:=0, y1:=0, x2:=0, y2:=0, Threshold:=""
-  , ScreenShot:=1, ByRef rx:="", ByRef ry:="", cut:=1)
+  , ScreenShot:=1, &rx:="", &ry:="", cut:=1)
 {
-  local
   x1:=this.Floor(x1), y1:=this.Floor(y1), x2:=this.Floor(x2), y2:=this.Floor(y2)
   if (x1=0 && y1=0 && x2=0 && y2=0)
     Try return this.Gui("CaptureS", ScreenShot)
-  SetBatchLines % (bch:=A_BatchLines)?"-1":"-1"
   x:=Min(x1,x2), y:=Min(y1,y2), w:=Abs(x2-x1)+1, h:=Abs(y2-y1)+1
-  bits:=this.GetBitsFromScreen(x,y,w,h,ScreenShot,zx,zy)
+  bits:=this.GetBitsFromScreen(&x,&y,&w,&h,ScreenShot,&zx,&zy)
   if (w<1 || h<1 || !bits.Scan0)
   {
-    SetBatchLines % bch
     return
   }
-  ListLines % (lls:=A_ListLines)?0:0
-  gs:=[]
+  ListLines (lls:=A_ListLines)?0:0
+  gs:=Map(), gs.Default:=0
   j:=bits.Stride-w*4, p:=bits.Scan0+(y-zy)*bits.Stride+(x-zx)*4-j-4
-  Loop % h + 0*(k:=0)
-  Loop % w + 0*(p+=j)
-    c:=NumGet(0|p+=4,"uint")
+  Loop h + 0*(k:=0)
+  Loop w + 0*(p+=j)
+    c:=NumGet(p+=4,"uint")
     , gs[++k]:=(((c>>16)&0xFF)*38+((c>>8)&0xFF)*75+(c&0xFF)*15)>>7
   if InStr(Threshold,"**")
   {
@@ -1886,8 +1816,8 @@ GetTextFromScreen(x1:=0, y1:=0, x2:=0, y2:=0, Threshold:=""
     if (Threshold="")
       Threshold:=50
     s:="", sw:=w, w-=2, h-=2, x++, y++
-    Loop % h + 0*(y1:=0)
-    Loop % w + 0*(y1++)
+    Loop h + 0*(y1:=0)
+    Loop w + 0*(y1++)
       i:=y1*sw+A_Index+1, j:=gs[i]+Threshold
       , s.=( gs[i-1]>j || gs[i+1]>j
       || gs[i-sw]>j || gs[i+sw]>j
@@ -1900,10 +1830,10 @@ GetTextFromScreen(x1:=0, y1:=0, x2:=0, y2:=0, Threshold:=""
     Threshold:=StrReplace(Threshold,"*")
     if (Threshold="")
     {
-      pp:=[]
+      pp:=Map(), pp.Default:=0
       Loop 256
         pp[A_Index-1]:=0
-      Loop % w*h
+      Loop w*h
         pp[gs[A_Index]]++
       IP0:=IS0:=0
       Loop 256
@@ -1913,7 +1843,7 @@ GetTextFromScreen(x1:=0, y1:=0, x2:=0, y2:=0, Threshold:=""
       {
         LastThreshold:=Threshold
         IP1:=IS1:=0
-        Loop % LastThreshold+1
+        Loop LastThreshold+1
           k:=A_Index-1, IP1+=k*pp[k], IS1+=pp[k]
         IP2:=IP0-IP1, IS2:=IS0-IS1
         if (IS1!=0 && IS2!=0)
@@ -1923,11 +1853,11 @@ GetTextFromScreen(x1:=0, y1:=0, x2:=0, y2:=0, Threshold:=""
       }
     }
     s:=""
-    Loop % w*h
+    Loop w*h
       s.=gs[A_Index]<=Threshold ? "1":"0"
     Threshold:="*" Threshold
   }
-  ListLines % lls
+  ListLines lls
   ;--------------------
   w:=Format("{:d}",w), CutUp:=CutDown:=0
   if (cut=1)
@@ -1942,7 +1872,6 @@ GetTextFromScreen(x1:=0, y1:=0, x2:=0, y2:=0, Threshold:=""
   rx:=x+w//2, ry:=y+CutUp+(h-CutUp-CutDown)//2
   s:="|<>" Threshold "$" w "." this.bit2base64(s)
   ;--------------------
-  SetBatchLines % bch
   return s
 }
 
@@ -1951,7 +1880,6 @@ GetTextFromScreen(x1:=0, y1:=0, x2:=0, y2:=0, Threshold:=""
 
 WaitChange(time:=-1, x1:=0, y1:=0, x2:=0, y2:=0)
 {
-  local
   hash:=this.GetPicHash(x1, y1, x2, y2, 0)
   time:=this.Floor(time), timeout:=A_TickCount+Round(time*1000)
   Loop
@@ -1969,7 +1897,6 @@ WaitChange(time:=-1, x1:=0, y1:=0, x2:=0, y2:=0)
 
 WaitNotChange(time:=1, timeout:=30, x1:=0, y1:=0, x2:=0, y2:=0)
 {
-  local
   oldhash:="", time:=this.Floor(time)
   , timeout:=A_TickCount+Round(this.Floor(timeout)*1000)
   Loop
@@ -1987,55 +1914,50 @@ WaitNotChange(time:=1, timeout:=30, x1:=0, y1:=0, x2:=0, y2:=0)
 
 GetPicHash(x1:=0, y1:=0, x2:=0, y2:=0, ScreenShot:=1)
 {
-  local
   static init:=DllCall("LoadLibrary", "Str","ntdll", "Ptr")
   x1:=this.Floor(x1), y1:=this.Floor(y1), x2:=this.Floor(x2), y2:=this.Floor(y2)
   if (x1=0 && y1=0 && x2=0 && y2=0)
     n:=150000, x:=y:=-n, w:=h:=2*n
   else
     x:=Min(x1,x2), y:=Min(y1,y2), w:=Abs(x2-x1)+1, h:=Abs(y2-y1)+1
-  bits:=this.GetBitsFromScreen(x,y,w,h,ScreenShot,zx,zy), x-=zx, y-=zy
+  bits:=this.GetBitsFromScreen(&x,&y,&w,&h,ScreenShot,&zx,&zy), x-=zx, y-=zy
   if (w<1 || h<1 || !bits.Scan0)
     return 0
   hash:=0, Stride:=bits.Stride, p:=bits.Scan0+(y-1)*Stride+x*4, w*=4
-  ListLines % (lls:=A_ListLines)?0:0
-  Loop % h
+  ListLines (lls:=A_ListLines)?0:0
+  Loop h
     hash:=(hash*31+DllCall("ntdll\RtlComputeCrc32", "uint",0
       , "Ptr",p+=Stride, "uint",w, "uint"))&0xFFFFFFFF
-  ListLines % lls
+  ListLines lls
   return hash
 }
 
-WindowToScreen(ByRef x, ByRef y, x1, y1, id:="")
+WindowToScreen(&x, &y, x1, y1, id:="")
 {
-  local
   if (!id)
-    WinGet, id, ID, A
-  VarSetCapacity(rect, 16, 0)
-  , DllCall("GetWindowRect", "Ptr",id, "Ptr",&rect)
+    id:=WinGetID("A")
+  rect:=Buffer(16, 0)
+  , DllCall("GetWindowRect", "Ptr",id, "Ptr",rect)
   , x:=x1+NumGet(rect,"int"), y:=y1+NumGet(rect,4,"int")
 }
 
-ScreenToWindow(ByRef x, ByRef y, x1, y1, id:="")
+ScreenToWindow(&x, &y, x1, y1, id:="")
 {
-  local
-  this.WindowToScreen(dx, dy, 0, 0, id), x:=x1-dx, y:=y1-dy
+  this.WindowToScreen(&dx, &dy, 0, 0, id), x:=x1-dx, y:=y1-dy
 }
 
-ClientToScreen(ByRef x, ByRef y, x1, y1, id:="")
+ClientToScreen(&x, &y, x1, y1, id:="")
 {
-  local
   if (!id)
-    WinGet, id, ID, A
-  VarSetCapacity(pt, 8, 0), NumPut(0, pt, "int64")
-  , DllCall("ClientToScreen", "Ptr",id, "Ptr",&pt)
+    id:=WinGetID("A")
+  pt:=Buffer(8, 0), NumPut("int64", 0, pt)
+  , DllCall("ClientToScreen", "Ptr",id, "Ptr",pt)
   , x:=x1+NumGet(pt,"int"), y:=y1+NumGet(pt,4,"int")
 }
 
-ScreenToClient(ByRef x, ByRef y, x1, y1, id:="")
+ScreenToClient(&x, &y, x1, y1, id:="")
 {
-  local
-  this.ClientToScreen(dx, dy, 0, 0, id), x:=x1-dx, y:=y1-dy
+  this.ClientToScreen(&dx, &dy, 0, 0, id), x:=x1-dx, y:=y1-dy
 }
 
 ; It is not like FindText always use Screen Coordinates,
@@ -2044,9 +1966,9 @@ ScreenToClient(ByRef x, ByRef y, x1, y1, id:="")
 PixelGetColor(x, y, ScreenShot:=1, id:="")
 {
   if (A_CoordModePixel="Window")
-    this.WindowToScreen(x, y, x, y, id)
+    this.WindowToScreen(&x, &y, x, y, id)
   else if (A_CoordModePixel="Client")
-    this.ClientToScreen(x, y, x, y, id)
+    this.ClientToScreen(&x, &y, x, y, id)
   if (ScreenShot)
     this.ScreenShot(x, y, x, y)
   return this.GetColor(x, y)
@@ -2056,23 +1978,22 @@ PixelGetColor(x, y, ScreenShot:=1, id:="")
 ; But like built-in command ImageSearch using CoordMode Settings
 ; ImageFile can use "*n *TransBlack/White/RRGGBB-DRDGDB... d:\a.bmp"
 
-ImageSearch(ByRef rx:="", ByRef ry:="", x1:=0, y1:=0, x2:=0, y2:=0
+ImageSearch(&rx:="", &ry:="", x1:=0, y1:=0, x2:=0, y2:=0
   , ImageFile:="", ScreenShot:=1, FindAll:=0, dir:=1)
 {
-  local
   dx:=dy:=0
   if (A_CoordModePixel="Window")
-    this.WindowToScreen(dx, dy, 0, 0)
+    this.WindowToScreen(&dx, &dy, 0, 0)
   else if (A_CoordModePixel="Client")
-    this.ClientToScreen(dx, dy, 0, 0)
+    this.ClientToScreen(&dx, &dy, 0, 0)
   text:=""
-  Loop Parse, ImageFile, |
+  Loop Parse, ImageFile, "|"
   if (v:=Trim(A_LoopField))!=""
   {
     text.=InStr(v,"$") ? "|" v : "|##"
-    . (RegExMatch(v, "O)(^|\s)\*(\d+)\s", r)
+    . (RegExMatch(v, "(^|\s)\*(\d+)\s", &r)
     ? Format("{:06X}", r[2]<<16|r[2]<<8|r[2]) : "000000")
-    . (RegExMatch(v, "Oi)(^|\s)\*Trans(\S+)\s", r) ? "/" Trim(r[2],"/"):"")
+    . (RegExMatch(v, "i)(^|\s)\*Trans(\S+)\s", &r) ? "/" Trim(r[2],"/"):"")
     . "$" Trim(RegExReplace(v,"(^|\s)\*\S+"))
   }
   x1:=this.Floor(x1), y1:=this.Floor(y1), x2:=this.Floor(x2), y2:=this.Floor(y2)
@@ -2083,12 +2004,12 @@ ImageSearch(ByRef rx:="", ByRef ry:="", x1:=0, y1:=0, x2:=0, y2:=0
   {
     For k,v in ok  ; you can use ok:=FindText().ok
       v.1-=dx, v.2-=dy, v.x-=dx, v.y-=dy
-    rx:=ok[1].1, ry:=ok[1].2, ErrorLevel:=0
+    rx:=ok[1].1, ry:=ok[1].2
     return ok
   }
   else
   {
-    rx:=ry:="", ErrorLevel:=1
+    rx:=ry:=""
     return 0
   }
 }
@@ -2097,13 +2018,12 @@ ImageSearch(ByRef rx:="", ByRef ry:="", x1:=0, y1:=0, x2:=0, y2:=0
 ; But like built-in command PixelSearch using CoordMode Settings
 ; ColorID can use "RRGGBB-DRDGDB|RRGGBB-DRDGDB", Variation in 0-255
 
-PixelSearch(ByRef rx:="", ByRef ry:="", x1:=0, y1:=0, x2:=0, y2:=0
+PixelSearch(&rx:="", &ry:="", x1:=0, y1:=0, x2:=0, y2:=0
   , ColorID:="", Variation:=0, ScreenShot:=1, FindAll:=0, dir:=1)
 {
-  local
   n:=this.Floor(Variation), text:=Format("##{:06X}$0/0/", n<<16|n<<8|n)
   . Trim(StrReplace(ColorID, "|", "/"), "- /")
-  return this.ImageSearch(rx, ry, x1, y1, x2, y2, text, ScreenShot, FindAll, dir)
+  return this.ImageSearch(&rx, &ry, x1, y1, x2, y2, text, ScreenShot, FindAll, dir)
 }
 
 ; Pixel count of certain colors within the range indicated by Screen Coordinates
@@ -2111,15 +2031,14 @@ PixelSearch(ByRef rx:="", ByRef ry:="", x1:=0, y1:=0, x2:=0, y2:=0
 
 PixelCount(x1:=0, y1:=0, x2:=0, y2:=0, ColorID:="", Variation:=0, ScreenShot:=1)
 {
-  local
   x1:=this.Floor(x1), y1:=this.Floor(y1), x2:=this.Floor(x2), y2:=this.Floor(y2)
   if (x1=0 && y1=0 && x2=0 && y2=0)
     n:=150000, x:=y:=-n, w:=h:=2*n
   else
     x:=Min(x1,x2), y:=Min(y1,y2), w:=Abs(x2-x1)+1, h:=Abs(y2-y1)+1
-  bits:=this.GetBitsFromScreen(x,y,w,h,ScreenShot,zx,zy), x-=zx, y-=zy
-  sum:=0, VarSetCapacity(s1,4), VarSetCapacity(s0,4), VarSetCapacity(ss,w*h)
-  ini:={ bits:bits, ss:&ss, s1:&s1, s0:&s0
+  bits:=this.GetBitsFromScreen(&x,&y,&w,&h,ScreenShot,&zx,&zy), x-=zx, y-=zy
+  sum:=0, s1:=Buffer(4), s0:=Buffer(4), ss:=Buffer(w*h)
+  ini:={ bits:bits, ss:ss.Ptr, s1:s1.Ptr, s0:s0.Ptr
     , err1:0, err0:0, allpos_max:0, zoomW:1, zoomH:1 }
   n:=this.Floor(Variation), text:=Format("##{:06X}$0/0/", n<<16|n<<8|n)
   . Trim(StrReplace(ColorID, "|", "/"), "- /")
@@ -2134,7 +2053,6 @@ PixelCount(x1:=0, y1:=0, x2:=0, y2:=0, ColorID:="", Variation:=0, ScreenShot:=1)
 
 ColorBlock(ColorID, w, h, Count)
 {
-  local
   Text:="|<>[" (1-Count/(w*h)) ",1]"
   . Trim(StrReplace(ColorID,"|","/"),"- /") . Format("${:d}.",w)
   . this.bit2base64(StrReplace(Format(Format("{{}:0{:d}d{}}",w*h),0),"0","1"))
@@ -2143,16 +2061,15 @@ ColorBlock(ColorID, w, h, Count)
 
 Click(x:="", y:="", other1:="", other2:="", GoBack:=0)
 {
-  local
-  CoordMode, Mouse, % (bak:=A_CoordModeMouse)?"Screen":"Screen"
+  CoordMode "Mouse", (bak:=A_CoordModeMouse)?"Screen":"Screen"
   if GoBack
-    MouseGetPos, oldx, oldy
-  MouseMove, x, y, 0
+    MouseGetPos &oldx, &oldy
+  MouseMove x, y, 0
   Sleep 30
-  Click % x "," y "," other1 "," other2
+  Click x "," y "," other1 "," other2
   if GoBack
-    MouseMove, oldx, oldy, 0
-  CoordMode, Mouse, %bak%
+    MouseMove oldx, oldy, 0
+  CoordMode "Mouse", bak
   return 1
 }
 
@@ -2161,24 +2078,23 @@ Click(x:="", y:="", other1:="", other2:="", GoBack:=0)
 
 ControlClick(x, y, WhichButton:="", ClickCount:=1, Opt:="", hwnd:="")
 {
-  local
   if !hwnd
     hwnd:=DllCall("WindowFromPoint", "int64",y<<32|x&0xFFFFFFFF, "Ptr")
-  VarSetCapacity(pt,8,0), ScreenX:=x, ScreenY:=y
+  pt:=Buffer(8,0), ScreenX:=x, ScreenY:=y
   Loop
   {
-    NumPut(0,pt,"int64"), DllCall("ClientToScreen", "Ptr",hwnd, "Ptr",&pt)
+    NumPut("int64",0,pt), DllCall("ClientToScreen", "Ptr",hwnd, "Ptr",pt)
     , x:=ScreenX-NumGet(pt,"int"), y:=ScreenY-NumGet(pt,4,"int")
     , id:=DllCall("ChildWindowFromPoint", "Ptr",hwnd, "int64",y<<32|x, "Ptr")
     if (!id || id=hwnd)
       Break
     else hwnd:=id
   }
-  DetectHiddenWindows % (bak:=A_DetectHiddenWindows)?1:1
-  PostMessage, 0x200, 0, y<<16|x,, ahk_id %hwnd%  ; WM_MOUSEMOVE
+  DetectHiddenWindows (bak:=A_DetectHiddenWindows)?1:1
+  PostMessage 0x200, 0, y<<16|x, hwnd  ; WM_MOUSEMOVE
   SetControlDelay -1
-  ControlClick, x%x% y%y%, ahk_id %hwnd%,, %WhichButton%, %ClickCount%, NA Pos %Opt%
-  DetectHiddenWindows % bak
+  ControlClick "x" x " y" y, hwnd,, WhichButton, ClickCount, "NA Pos " Opt
+  DetectHiddenWindows bak
   return 1
 }
 
@@ -2192,37 +2108,36 @@ Class Thread
   }
   __Delete()
   {
-    Process, Close, % this.pid
+    ProcessClose this.pid
   }
   Exec(s, Ahk:="", args:="")    ; required AHK v1.1.34+ and Ahk2Exe Use .exe
   {
-    local
     Ahk:=Ahk ? Ahk : A_IsCompiled ? A_ScriptFullPath : A_AhkPath
-    s:="`nDllCall(""SetWindowText"",""Ptr"",A_ScriptHwnd,""Str"",""<AHK>"")`n"
-      . "`nSetBatchLines,-1`n" . s, s:=RegExReplace(s, "\R", "`r`n")
+    s:="`nDllCall(`"SetWindowText`",`"Ptr`",A_ScriptHwnd,`"Str`",`"<AHK>`")`n"
+      . "`n`n" . s, s:=RegExReplace(s, "\R", "`r`n")
     Try
     {
-      shell:=ComObjCreate("WScript.Shell")
-      oExec:=shell.Exec("""" Ahk """ /script /force /CP0 * " args)
+      shell:=ComObject("WScript.Shell")
+      oExec:=shell.Exec("`"" Ahk "`" /script /force /CP0 * " args)
       oExec.StdIn.Write(s)
       oExec.StdIn.Close(), pid:=oExec.ProcessID
     }
     Catch
     {
       f:=A_Temp "\~ahk.tmp"
-      s:="`r`nTry FileDelete " f "`r`n" s
-      Try FileDelete %f%
-      FileAppend %s%, %f%
+      s:="`r`nTry FileDelete `"" f "`"`r`n" s
+      Try FileDelete f
+      FileAppend s, f
       r:=this.Clear.Bind(this)
-      SetTimer %r%, -3000
-      Run "%Ahk%" /script /force /CP0 "%f%" %args%,, UseErrorLevel, pid
+      SetTimer r, -3000
+      Run "`"" Ahk "`" /script /force /CP0 `"" f "`" " args,,, &pid
     }
     return pid
   }
   Clear()
   {
-    Try FileDelete % A_Temp "\~ahk.tmp"
-    SetTimer,, Off
+    Try FileDelete A_Temp "\~ahk.tmp"
+    SetTimer(,0)
   }
 }
 
@@ -2230,20 +2145,15 @@ Class Thread
 
 QPC()
 {
-  static init, f, c
-  if !VarSetCapacity(init) && (init:="1")
-    f:=0, c:=DllCall("QueryPerformanceFrequency", "Int64*",f)+(f/=1000)
-  return (!DllCall("QueryPerformanceCounter","Int64*",c))*0+(c/f)
+  static f:=0, c:=DllCall("QueryPerformanceFrequency", "Int64*",&f)+(f/=1000)
+  return (!DllCall("QueryPerformanceCounter", "Int64*",&c))*0+(c/f)
 }
 
 ; FindText().ToolTip() Use the same as ToolTip
 
 ToolTip(s:="", x:="", y:="", num:=1, arg:="")
 {
-  local
-  static init, ini, tip, timer
-  if !VarSetCapacity(init) && (init:="1")
-    ini:=[], tip:=[], timer:=[]
+  static ini:=Map(), tip:=Map(), timer:=Map()
   f:="ToolTip_" . this.Floor(num)
   if (s="")
   {
@@ -2254,25 +2164,26 @@ ToolTip(s:="", x:="", y:="", num:=1, arg:="")
   ;-----------------
   r1:=A_CoordModeToolTip
   r2:=A_CoordModeMouse
-  CoordMode Mouse, Screen
-  MouseGetPos x1, y1
-  CoordMode Mouse, %r1%
-  MouseGetPos x2, y2
-  CoordMode Mouse, %r2%
+  CoordMode "Mouse", "Screen"
+  MouseGetPos &x1, &y1
+  CoordMode "Mouse", r1
+  MouseGetPos &x2, &y2
+  CoordMode "Mouse", r2
   (x!="" && x:="x" (this.Floor(x)+x1-x2))
   , (y!="" && y:="y" (this.Floor(y)+y1-y2))
   , (x="" && y="" && x:="x" (x1+16) " y" (y1+16))
   ;-----------------
-  bgcolor:=arg.bgcolor!="" ? arg.bgcolor : "FAFBFC"
-  color:=arg.color!="" ? arg.color : "Black"
-  font:=arg.font ? arg.font : "Consolas"
-  size:=arg.size ? arg.size : "10"
-  bold:=arg.bold ? arg.bold : ""
-  trans:=arg.trans!="" ? arg.trans & 255 : 255
-  timeout:=arg.timeout!="" ? arg.timeout : ""
+  (!IsObject(arg) && arg:={})
+  bgcolor:=arg.HasOwnProp("bgcolor") ? arg.bgcolor : "FAFBFC"
+  color:=arg.HasOwnProp("color") ? arg.color : "Black"
+  font:=arg.HasOwnProp("font") ? arg.font : "Consolas"
+  size:=arg.HasOwnProp("size") ? arg.size : "10"
+  bold:=arg.HasOwnProp("bold") ? arg.bold : ""
+  trans:=arg.HasOwnProp("trans") ? arg.trans & 255 : 255
+  timeout:=arg.HasOwnProp("timeout") ? arg.timeout : ""
   ;-----------------
   r:=bgcolor "|" color "|" font "|" size "|" bold "|" trans "|" s
-  if (!ini.HasKey(f) || ini[f]!=r)
+  if (!ini.Has(f) || ini[f]!=r)
   {
     ini[f]:=r
     Try tip[f].Destroy()
@@ -2284,15 +2195,14 @@ ToolTip(s:="", x:="", y:="", num:=1, arg:="")
     _Gui.Add("Text",, s)
     _Gui.Title:=f
     _Gui.Show("Hide")
-    WinSet, Transparent, % trans
+    WinSetTransparent(trans)
   }
   tip[f].Opt("+AlwaysOnTop")
   tip[f].Show("NA " x " " y)
   if (timeout)
   {
-    (!timer.HasKey(f) && timer[f]:=this.ToolTip.Bind(this,"","","",num))
-    , r:=timer[f]
-    SetTimer, %r%, % -Round(Abs(this.Floor(timeout)*1000))-1
+    (!timer.Has(f) && timer[f]:=this.ToolTip.Bind(this,"","","",num))
+    SetTimer timer[f], -Round(Abs(this.Floor(timeout)*1000))-1
   }
 }
 
@@ -2300,47 +2210,44 @@ ToolTip(s:="", x:="", y:="", num:=1, arg:="")
 
 ObjView(obj, keyname:="")
 {
-  local
-  if IsObject(obj)  ; thanks lexikos's type(v)
+  if IsObject(obj)
   {
     s:=""
-    For k,v in obj
-      s.=this.ObjView(v, keyname "[" (StrLen(k)>1000
-      || [k].GetCapacity(1) ? """" k """":k) "]")
+    For k,v in (HasMethod(obj,"__Enum") ? obj : obj.OwnProps())
+      s.=this.ObjView(v, keyname "[" ((k is Integer) ? k : "`"" k "`"") "]")
   }
   else
-    s:=keyname ": " (StrLen(obj)>1000
-    || [obj].GetCapacity(1) ? """" obj """":obj) "`n"
+    s:=keyname ": " ((obj is Number) ? obj : "`"" obj "`"") "`n"
   if (keyname!="")
     return s
   ;------------------
   _Gui:=Gui("+AlwaysOnTop")
-  _Gui.Add("Button", "y270 w350 gCancel Default", "OK")
+  _Gui.Add("Button", "y270 w350 Default", "OK").OnEvent("Click",(*)=>WinHide())
   _Gui.Add("Edit", "xp y10 w350 h250 -Wrap -WantReturn")
   _Gui["Edit1"].Value:=s
   _Gui.Title:="Debug view object values"
   _Gui.Show()
   DetectHiddenWindows 0
-  WinWaitClose % "ahk_id " _Gui.Hwnd
+  WinWaitClose "ahk_id " _Gui.Hwnd
   _Gui.Destroy()
 }
 
 EditScroll(hEdit, regex:="", line:=0, pos:=0)
 {
-  local
-  ControlGetText, s,, ahk_id %hEdit%
-  pos:=(regex!="") ? InStr(SubStr(s,1,s~=regex),"`n",0,0)
+  s:=ControlGetText(hEdit)
+  pos:=(regex!="") ? InStr(SubStr(s,1,s~=regex),"`n",0,-1)
     : (line>1) ? InStr(s,"`n",0,1,line-1) : pos
-  SendMessage, 0xB1, pos, pos,, ahk_id %hEdit%
-  SendMessage, 0xB7,,,, ahk_id %hEdit%
+  SendMessage 0xB1, pos, pos, hEdit
+  SendMessage 0xB7,,, hEdit
 }
 
 ; Get Last GuiControl object from Gui.Opt("+LastFound")
 
 LastCtrl()
 {
-  local
-  return (G:=GuiFromHwnd(WinExist()))[G.LastHwnd]
+  For Ctrl in GuiFromHwnd(WinExist())
+    last:=Ctrl
+  return last
 }
 
 ; Hide Gui from Gui.Opt("+LastFound")
@@ -2351,12 +2258,12 @@ Hide(args*)
   WinHide
   ToolTip
   DetectHiddenWindows 0
-  WinWaitClose % "ahk_id " WinExist()
+  WinWaitClose "ahk_id " WinExist()
 }
 
 SC(RGB, hwnd)
 {
-  SendMessage,0x2001,0,(RGB&0xFF)<<16|RGB&0xFF00|(RGB>>16)&0xFF,,% "ahk_id " hwnd
+  SendMessage 0x2001,0,(RGB&0xFF)<<16|RGB&0xFF00|(RGB>>16)&0xFF,hwnd
 }
 
 
@@ -2365,12 +2272,11 @@ SC(RGB, hwnd)
 
 Gui(cmd, arg1:="", args*)
 {
-  local
   static
-  local bch, cri, lls, _Gui
-  ListLines, % InStr("MouseMove|ToolTipOff",cmd)?0:A_ListLines
-  static init
-  if !VarSetCapacity(init) && (init:="1")
+  local cri, lls, _Gui
+  ListLines InStr("MouseMove|ToolTipOff",cmd)?0:A_ListLines
+  static init:=0
+  if (!init && init:=1)
   {
     SavePicDir:=A_Temp "\Ahk_ScreenShot\"
     G_ := this.Gui.Bind(this)
@@ -2391,10 +2297,9 @@ Gui(cmd, arg1:="", args*)
     G_Drag := this.Gui.Bind(this, "Drag")
     FindText_Capture:=FindText_Main:=""
     PrevControl:=x:=y:=oldx:=oldy:=""
-    Pics:=[], hBM_old:=dx:=dy:=0
-    bch:=A_BatchLines, cri:=A_IsCritical
+    Pics:=Map(), hBM_old:=dx:=dy:=0
+    cri:=A_IsCritical
     Critical
-    #NoEnv
     Lang:=this.Lang(,1), Tip_Text:=this.Lang(,2)
     G_.Call("MakeCaptureWindow")
     G_.Call("MakeMainWindow")
@@ -2402,19 +2307,19 @@ Gui(cmd, arg1:="", args*)
     OnMessage(0x201, G_LButtonDown)
     OnMessage(0x204, G_RButtonDown)
     OnMessage(0x200, G_MouseMove)
-    Menu, Tray, Add
-    Menu, Tray, Add, % Lang["s1"], % G_Show
+    MenuTray:=A_TrayMenu
+    MenuTray.Add
+    MenuTray.Add Lang["s1"], G_Show
     if (!A_IsCompiled && A_LineFile=A_ScriptFullPath)
     {
-      Menu, Tray, Default, % Lang["s1"]
-      Menu, Tray, Click, 1
-      Menu, Tray, Icon, Shell32.dll, 23
+      MenuTray.Default:=Lang["s1"]
+      MenuTray.ClickCount:=1
+      TraySetIcon "Shell32.dll", 23
     }
-    Critical % cri
-    SetBatchLines % bch
+    Critical cri
     Gui("+LastFound").Destroy()
   }
-  Switch cmd
+  Switch cmd, 1
   {
   Case "G":
     id:=this.LastCtrl()
@@ -2428,7 +2333,7 @@ Gui(cmd, arg1:="", args*)
     return
   Case "Show":
     FindText_Main.Show(arg1 ? "Center" : "")
-    ControlFocus,, % "ahk_id " hscr
+    ControlFocus hscr
     return
   Case "Cancel", "Cancel2":
     WinHide
@@ -2443,18 +2348,18 @@ Gui(cmd, arg1:="", args*)
     _Gui.SetFont("s12", "Verdana")
     Tab:=_Gui.Add("Tab3", "vMyTab1 -Wrap", StrSplit(Lang["s18"],"|"))
     Tab.UseTab(1)
-    C_:=[], Cid_:=[]
+    C_:=Map(), Cid_:=Map()
     , nW:=71, nH:=25, w:=h:=12, pW:=nW*(w+1)-1, pH:=(nH+1)*(h+1)-1
     id:=_Gui.Add("Text", "w" pW " h" pH), Cid_[id.Hwnd]:=-1
     _Gui.Opt("-Theme")
-    ListLines % (lls:=A_ListLines)?0:0
-    Loop % nW*(nH+1)
+    ListLines (lls:=A_ListLines)?0:0
+    Loop nW*(nH+1)
     {
       i:=A_Index, j:=i=1 ? "xp yp Section" : Mod(i,nW)=1 ? "xs y+1":"x+1"
       id:=_Gui.Add("Progress", j " w" w " h" h " -E0x20000 Smooth")
       C_[i]:=id.Hwnd, Cid_[id.Hwnd]:=i
     }
-    ListLines % lls
+    ListLines lls
     _Gui.Opt("+Theme")
     _Gui.Add("Slider", "xs w" pW " vMySlider1 +Center Page20 Line10 NoTicks AltSubmit")
     G_G.Call()
@@ -2491,7 +2396,7 @@ Gui(cmd, arg1:="", args*)
     _Gui.Add("Edit", "x+5 yp-3 w80 vSelB ReadOnly")
     ;--------------
     id:=_Gui.Add("Button", "xm Hidden Section", Lang["Auto"])
-    id.GetPos(pX, pY, pW, pH)
+    id.GetPos(&pX, &pY, &pW, &pH)
     w:=Round(pW*0.75), i:=Round(w*3+15+pW*0.5-w*1.5)
     _Gui.Add("Button", "xm+" i " yp w" w " hp -Wrap vRepU", Lang["RepU"])
     G_G.Call()
@@ -2621,10 +2526,10 @@ Gui(cmd, arg1:="", args*)
     _Gui.Add("Text", "x+15 ys", Lang["Myhh"] ": ")
     _Gui.Add("Text", "x+0 w80", nH//2)
     id:=_Gui.Add("UpDown", "vMyhh Range1-100", nH//2)
-    id.GetPos(pX, pY, pW, pH)
+    id.GetPos(&pX, &pY, &pW, &pH)
     _Gui["MyGroup"].Move(,, pX+pW, pH+30)
     id:=_Gui.Add("Checkbox", "x+100 ys vAddFunc", Lang["AddFunc"] " FindText()")
-    id.GetPos(pX, pY, pW, pH)
+    id.GetPos(&pX, &pY, &pW, &pH)
     pW:=pX+pW-15, pW:=(pW<720?720:pW), w:=pW//5
     _Gui.Add("Button", "xm y+18 w" w " vCutL2", Lang["CutL2"])
     G_G.Call()
@@ -2659,7 +2564,7 @@ Gui(cmd, arg1:="", args*)
     G_G.Call()
     id:=_Gui.Add("Button", "x+0 vGetClipOffset", Lang["GetClipOffset"])
     G_G.Call()
-    id.GetPos(x,, w)
+    id.GetPos(&x,, &w)
     w:=((pW+15)-(x+w))//2
     _Gui.Add("Edit", "x+0 w" w " hp vOffset")
     _Gui.Add("Button", "x+0 wp vCopyOffset", Lang["CopyOffset"])
@@ -2672,15 +2577,15 @@ Gui(cmd, arg1:="", args*)
     OnExit(G_SaveScr)
     return
   Case "LoadScr":
-    f:=A_Temp "\~scr1.tmp"
-    FileRead, s, %f%
+    f:=A_Temp "\~scr2.tmp"
+    Try s:="", s:=FileRead(f)
     FindText_Main["scr"].Value:=s
     return
   Case "SaveScr":
-    f:=A_Temp "\~scr1.tmp"
+    f:=A_Temp "\~scr2.tmp"
     s:=FindText_Main["scr"].Value
-    Try FileDelete, %f%
-    FileAppend, %s%, %f%
+    Try FileDelete f
+    FileAppend s, f
     return
   Case "Capture", "CaptureS":
     _Gui:=FindText_Main
@@ -2703,18 +2608,18 @@ Gui(cmd, arg1:="", args*)
       _Gui["MyTab1"].Choose(2)
     }
     n:=150000, x:=y:=-n, w:=h:=2*n
-    hBM:=this.BitmapFromScreen(x,y,w,h,(arg1=0?0:1))
-    Pics:=[], Pics[hBM]:=1, hBM_x:=hBM_y:=0
+    hBM:=this.BitmapFromScreen(&x,&y,&w,&h,(arg1=0?0:1))
+    Pics:=Map(), Pics[hBM]:=1, hBM_x:=hBM_y:=0
     G_.Call("CaptureUpdate")
     G_.Call("PicUpdate")
     Names:=["HBITMAP:*" hBM], s:="<New>"
-    Loop Files, % SavePicDir "*.bmp"
+    Loop Files, SavePicDir "*.bmp"
       Names.Push(v:=A_LoopFileFullPath), s.="|" RegExReplace(v,"i)^.*\\|\.bmp$")
     _Gui["SelectBox"].Delete()
     _Gui["SelectBox"].Add(StrSplit(Trim(s,"|"),"|"))
     ;------------------------
     s:="SelGray|SelColor|SelR|SelG|SelB|Threshold|Comment|ColorList"
-    Loop Parse, s, |
+    Loop Parse, s, "|"
       _Gui[A_LoopField].Value:=""
     _Gui["Modify"].Value:=Modify:=0
     _Gui["MultiColor"].Value:=MultiColor:=0
@@ -2724,23 +2629,23 @@ Gui(cmd, arg1:="", args*)
     _Gui.Show("Center")
     Event:=Result:=""
     DetectHiddenWindows 0
-    Critical, Off
-    WinWaitClose % "ahk_id " _Gui.Hwnd
+    Critical "Off"
+    WinWaitClose "ahk_id " _Gui.Hwnd
     Critical
     ToolTip
     Pics[hBM]:=1, hBM_old:=0
     For k,v in Pics
       Try DllCall("DeleteObject", "Ptr",k)
-    Text:=RegExMatch(Result,"O)\|<[^>\n]*>[^$\n]+\$[^""\r\n]+",r)?r[0]:""
+    Text:=RegExMatch(Result,"\|<[^>\n]*>[^$\n]+\$[^`"'\r\n]+",&r)?r[0]:""
     ;------------------------
     _Gui:=FindText_Main
     if (bind_mode!="")
     {
-      WinGetTitle, tt, ahk_id %Bind_ID%
-      WinGetClass, tc, ahk_id %Bind_ID%
+      tt:=WinGetTitle(Bind_ID)
+      tc:=WinGetClass(Bind_ID)
       tt:=Trim(SubStr(tt,1,30) (tc ? " ahk_class " tc:""))
-      tt:=StrReplace(RegExReplace(tt,"[;``]","``$0"),"""","""""")
-      Result:="`nSetTitleMatchMode 2`nid:=WinExist(""" tt """)"
+      tt:=StrReplace(RegExReplace(tt, "[;``]", "``$0"), "`"","```"")
+      Result:="`nSetTitleMatchMode 2`nid:=WinExist(`"" tt "`")"
         . "`nFindText().BindWindow(id" (bind_mode=0 ? "":"," bind_mode)
         . ")  `; " Lang["s6"] " FindText().BindWindow(0)`n`n" Result
     }
@@ -2748,9 +2653,9 @@ Gui(cmd, arg1:="", args*)
     {
       s:=""
       if (!A_IsCompiled)
-        Try FileRead, s, %A_LineFile%
-      re:="Oi)\n\s*FindText[^\n]+args\*[\s\S]*?Script_End[(){}\s]+}"
-      s:=RegExMatch(s, re, r) ? "`n;==========`n" r[0] "`n" : ""
+        Try s:=FileRead(A_LineFile)
+      re:="i)\n\s*FindText[^\n]+args\*[\s\S]*?Script_End[(){}\s]+}"
+      s:=RegExMatch(s, re, &r) ? "`n;==========`n" r[0] "`n" : ""
       _Gui["scr"].Value:=Result "`n" s
       _Gui["MyPic"].Value:=Trim(this.ASCII(Result),"`n")
     }
@@ -2758,40 +2663,42 @@ Gui(cmd, arg1:="", args*)
     {
       s:=_Gui["scr"].Value
       r:=SubStr(s, 1, InStr(s,"=FindText("))
-      i:=j:=0, re:="<[^>\n]*>[^$\n]+\$[^""\r\n]+"
+      i:=j:=0, re:="<[^>\n]*>[^$\n]+\$[^`"'\r\n]+"
       While j:=RegExMatch(r, re,, j+1)
         i:=InStr(r, "`n", 0, j)
       _Gui["scr"].Value:=SubStr(s,1,i) . Result . SubStr(s,i+1)
       _Gui["MyPic"].Value:=Trim(this.ASCII(Result),"`n")
     }
-    if (Event) && RegExMatch(Result, "O)\$\d+\.[\w+/]{1,100}", r)
+    if (Event) && RegExMatch(Result, "\$\d+\.[\w+/]{1,100}", &r)
       this.EditScroll(hscr, "\Q" r[0] "\E")
     Event:=Result:=s:=""
     ;----------------------
     if (show_gui && arg1="")
       G_Show.Call()
-    else Clipboard:=Text
+    else A_Clipboard:=Text
     return Text
   Case "CaptureUpdate":
     nX:=sx, nY:=sy, nW:=sw, nH:=sh
-    bits:=this.GetBitsFromScreen(nX,nY,nW,nH,0,zx,zy)
-    cors:=[], show:=[], ascii:=[]
+    bits:=this.GetBitsFromScreen(&nX,&nY,&nW,&nH,0,&zx,&zy)
+    cors:=Map(), cors.Default:=0
+    , show:=Map(), show.Default:=0
+    , ascii:=Map(), ascii.Default:=0
     , SelPos:=bg:=color:=""
     , dx:=dy:=CutLeft:=CutRight:=CutUp:=CutDown:=0
-    ListLines % (lls:=A_ListLines)?0:0
+    ListLines (lls:=A_ListLines)?0:0
     if (nW>0 && nH>0 && bits.Scan0)
     {
       j:=bits.Stride-nW*4, p:=bits.Scan0+(nY-zy)*bits.Stride+(nX-zx)*4-j-4
-      Loop % nH + 0*(k:=0)
-      Loop % nW + 0*(p+=j)
-        show[++k]:=1, cors[k]:=NumGet(0|p+=4,"uint")
+      Loop nH + 0*(k:=0)
+      Loop nW + 0*(p+=j)
+        show[++k]:=1, cors[k]:=NumGet(p+=4,"uint")
     }
-    Loop % 25 + 0*(ty:=dy-1)*(k:=0)
-    Loop % 71 + 0*(tx:=dx-1)*(ty++)
+    Loop 25 + 0*(ty:=dy-1)*(k:=0)
+    Loop 71 + 0*(tx:=dx-1)*(ty++)
       this.SC(((++tx)<nW && ty<nH ? cors[ty*nW+tx+1]:WindowColor), C_[++k])
-    Loop % 71 + 0*(k:=71*25)
+    Loop 71 + 0*(k:=71*25)
       this.SC(0xFFFFAA, C_[++k])
-    ListLines % lls
+    ListLines lls
     _Gui:=FindText_Capture
     _Gui["MySlider1"].Enabled:=nW>71
     _Gui["MySlider2"].Enabled:=nH>25
@@ -2799,9 +2706,9 @@ Gui(cmd, arg1:="", args*)
     _Gui["MySlider2"].Value:=0
     return
   Case "PicUpdate":
-    Try i:=0, i:=Pics.HasKey(hBM_old)
+    Try i:=0, i:=Pics.Has(hBM_old)
     Try (!i) && DllCall("DeleteObject", "Ptr",hBM_old)
-    this.GetBitmapWH(hBM, hBM_w, hBM_h), hBM_old:=hBM
+    this.GetBitmapWH(hBM, &hBM_w, &hBM_h), hBM_old:=hBM
     G_.Call("PicShow", 1)
     return
   Case "MySlider3", "MySlider4":
@@ -2820,7 +2727,7 @@ Gui(cmd, arg1:="", args*)
     else
     {
       this.BitmapToWindow(hPic,0,0,Pic_hBM,0,0,Pic_w,Pic_h)
-      SetTimer, % G_PicShowOK, -1000
+      SetTimer G_PicShowOK, -1000
     }
     FindText_Capture["MySlider3"].Value:=w>0?Round(hBM_x/w*100):0
     FindText_Capture["MySlider4"].Value:=h>0?Round(hBM_y/h*100):0
@@ -2837,20 +2744,20 @@ Gui(cmd, arg1:="", args*)
     if (f="")
     {
       if !FileExist(SavePicDir)
-        FileCreateDir, % SavePicDir
+        DirCreate SavePicDir
       f:=SavePicDir "*.bmp"
-      Loop Files, % f
+      Loop Files, f
         f:=A_LoopFileFullPath
-      FileSelectFile, f,, %f%, Select Picture
+      f:=FileSelect(, f, "Select Picture")
     }
     if !InStr(f,"HBITMAP:") && !FileExist(f)
     {
-      MsgBox, 4096, Tip, % Lang["s17"]
+      MsgBox Lang["s17"], "Tip", "4096 T1"
       return
     }
-    if !this.ShowPic(f, 0, sx, sy, sw, sh)
+    if !this.ShowPic(f, 0, &sx, &sy, &sw, &sh)
       return
-    hBM:=this.BitmapFromScreen(sx, sy, sw, sh, 0)
+    hBM:=this.BitmapFromScreen(&sx, &sy, &sw, &sh, 0)
     sw:=Min(sw,71), sh:=Min(sh,25)
     G_.Call("CaptureUpdate")
     G_.Call("PicUpdate")
@@ -2862,12 +2769,11 @@ Gui(cmd, arg1:="", args*)
     Loop
     {
       p:=this.GetRange2()
-      MsgBox, 4099, Tip, % Lang["s15"]
-      IfMsgBox, No
-        Continue
-      Break
+      r:=MsgBox(Lang["s15"], "Tip", "4099")
+      if (r!="No")
+        Break
     }
-    IfMsgBox, Yes
+    if (r="Yes")
       G_.Call("ScreenShot", p[1] "|" p[2] "|" p[3] "|" p[4] "|0")
     this.ShowPic()
     return
@@ -2879,17 +2785,16 @@ Gui(cmd, arg1:="", args*)
     return
   Case "ClearAll":
     FindText_Capture.Opt("+OwnDialogs")
-    MsgBox, 4100, Tip, % Lang["s19"]
-    IfMsgBox, Yes
+    if MsgBox(Lang["s19"], "Tip", "4100")="Yes"
     {
       FindText_Capture.Hide()
-      FileDelete, % SavePicDir "*.bmp"
+      Try FileDelete SavePicDir "*.bmp"
     }
     return
   Case "OpenDir":
     if !FileExist(SavePicDir)
-      FileCreateDir, % SavePicDir
-    Run, % SavePicDir
+      DirCreate SavePicDir
+    Run SavePicDir
     return
   Case "GetRange":
     _Gui:=FindText_Main
@@ -2917,28 +2822,27 @@ Gui(cmd, arg1:="", args*)
       s:=_Gui["ClipText"].Value
     if (cmd="Test") && InStr(s, "MCode(")
     {
-      s:="`n#NoEnv`nMenu, Tray, Click, 1`n" s "`nExitApp`n"
-      Thread1:=new this.Thread(s)
-      DetectHiddenWindows, 1
-      WinWait, % "ahk_class AutoHotkey ahk_pid " Thread1.pid,, 3
-      if (!ErrorLevel)
-        WinWaitClose,,, 30
+      s:="`nA_TrayMenu.ClickCount:=1`n" s "`nExitApp`n"
+      Thread1:=FindTextClass.Thread(s)
+      DetectHiddenWindows 1
+      if WinWait("ahk_class AutoHotkey ahk_pid " Thread1.pid,, 3)
+        WinWaitClose(,, 30)
       ; Thread1:=""  ; kill the Thread
     }
     else
     {
       t:=A_TickCount, v:=X:=Y:=""
-      if RegExMatch(s, "O)<[^>\n]*>[^$\n]+\$[^""\r\n]+", r)
-        v:=this.FindText(X, Y, 0,0,0,0, 0,0, r[0])
+      if RegExMatch(s, "<[^>\n]*>[^$\n]+\$[^`"'\r\n]+", &r)
+        v:=this.FindText(&X, &Y, 0,0,0,0, 0,0, r[0])
       r:=StrSplit(Lang["s8"] "||||", "|")
-      MsgBox, 4096, Tip, % r[1] ":`t" (IsObject(v)?v.Length():v) "`n`n"
+      MsgBox r[1] ":`t" (IsObject(v)?v.Length:v) "`n`n"
         . r[2] ":`t" (A_TickCount-t) " " r[3] "`n`n"
         . r[4] ":`t" X ", " Y "`n`n"
-        . r[5] ":`t<" (IsObject(v)?v[1].id:"") ">", 3
+        . r[5] ":`t<" (IsObject(v)?v[1].id:"") ">", "Tip", "4096 T3"
       Try For i,j in v
         if (i<=2)
           this.MouseTip(j.x, j.y)
-      v:="", Clipboard:=X "," Y
+      v:="", A_Clipboard:=X "," Y
     }
     ;----------------------
     G_Show.Call()
@@ -2951,8 +2855,8 @@ Gui(cmd, arg1:="", args*)
       s:=_Gui["scr"].Value
     else
       s:=_Gui["ClipText"].Value
-    if RegExMatch(s, "O)<[^>\n]*>[^$\n]+\$[^""\r\n]+", r)
-    && this.FindText(X, Y, 0,0,0,0, 0,0, r[0])
+    if RegExMatch(s, "<[^>\n]*>[^$\n]+\$[^`"'\r\n]+", &r)
+    && this.FindText(&X, &Y, 0,0,0,0, 0,0, r[0])
     {
       r:=StrReplace("X+" ((p[1]+p[3])//2-X)
         . ", Y+" ((p[2]+p[4])//2-Y), "+-", "-")
@@ -2968,17 +2872,17 @@ Gui(cmd, arg1:="", args*)
     s:="", G_Show.Call()
     return
   Case "Paste":
-    if RegExMatch(Clipboard, "O)\|?<[^>\n]*>[^$\n]+\$[^""\r\n]+", r)
+    if RegExMatch(A_Clipboard, "\|?<[^>\n]*>[^$\n]+\$[^`"'\r\n]+", &r)
     {
       FindText_Main["ClipText"].Value:=r[0]
       FindText_Main["MyPic"].Value:=Trim(this.ASCII(r[0]),"`n")
     }
     return
   Case "CopyOffset":
-    Clipboard:=FindText_Main["Offset"].Value
+    A_Clipboard:=FindText_Main["Offset"].Value
     return
   Case "Copy":
-    ControlGet, s, Selected,,, ahk_id %hscr%
+    s:=EditGetSelectedText(hscr)
     if (s="")
     {
       s:=FindText_Main["scr"].Value
@@ -2988,8 +2892,8 @@ Gui(cmd, arg1:="", args*)
         , s:=RegExReplace(s, "i)\n; ok:=FindText[\s\S]*")
         , s:=SubStr(s, (s~="i)\n[ \t]*Text"))
     }
-    Clipboard:=RegExReplace(s, "\R", "`r`n")
-    ControlFocus,, % "ahk_id " hscr
+    A_Clipboard:=RegExReplace(s, "\R", "`r`n")
+    ControlFocus hscr
     return
   Case "Apply":
     _Gui:=FindText_Main
@@ -2997,10 +2901,10 @@ Gui(cmd, arg1:="", args*)
     SetHotkey1:=_Gui["SetHotkey1"].Value
     SetHotkey2:=_Gui["SetHotkey2"].Text
     if (NowHotkey!="")
-      Hotkey, *%NowHotkey%,, Off UseErrorLevel
+      Try Hotkey "*" NowHotkey,, "Off"
     k:=SetHotkey1!="" ? SetHotkey1 : SetHotkey2
     if (k!="")
-      Hotkey, *%k%, %G_ScreenShot%, On UseErrorLevel
+      Try Hotkey "*" k, G_ScreenShot, "On"
     _Gui["NowHotkey"].Value:=k
     _Gui["SetHotkey1"].Value:=""
     _Gui["SetHotkey2"].Choose(0)
@@ -3008,25 +2912,25 @@ Gui(cmd, arg1:="", args*)
   Case "ScreenShot":
     Critical
     if !FileExist(SavePicDir)
-      FileCreateDir, % SavePicDir
+      DirCreate SavePicDir
     Loop
       f:=SavePicDir . Format("{:03d}.bmp",A_Index)
     Until !FileExist(f)
     this.SavePic(f, StrSplit(arg1,"|")*)
-    CoordMode, ToolTip
+    CoordMode "ToolTip"
     this.ToolTip(Lang["s9"],, 0,, { bgcolor:"Yellow", color:"Red"
       , size:48, bold:"bold", trans:200, timeout:0.2 })
     return
   Case "Bind0", "Bind1", "Bind2", "Bind3", "Bind4":
     this.BindWindow(Bind_ID, bind_mode:=SubStr(cmd,5))
     n:=150000, x:=y:=-n, w:=h:=2*n
-    hBM:=this.BitmapFromScreen(x,y,w,h,1)
+    hBM:=this.BitmapFromScreen(&x,&y,&w,&h,1)
     G_.Call("PicUpdate")
     FindText_Capture["MyTab1"].Choose(2)
     this.BindWindow(0)
     return
   Case "MySlider1", "MySlider2":
-    SetTimer, %G_Slider%, -10
+    SetTimer G_Slider, -10
     return
   Case "Slider":
     Critical
@@ -3034,14 +2938,14 @@ Gui(cmd, arg1:="", args*)
     dy:=nH>25 ? Round(FindText_Capture["MySlider2"].Value*(nH-25)/100):0
     if (oldx=dx && oldy=dy)
       return
-    ListLines % (lls:=A_ListLines)?0:0
-    Loop % 25 + 0*(ty:=dy-1)*(k:=0)
-    Loop % 71 + 0*(tx:=dx-1)*(ty++)
+    ListLines (lls:=A_ListLines)?0:0
+    Loop 25 + 0*(ty:=dy-1)*(k:=0)
+    Loop 71 + 0*(tx:=dx-1)*(ty++)
       this.SC(((++tx)>=nW || ty>=nH || !show[i:=ty*nW+tx+1]
       ? WindowColor : bg="" ? cors[i] : ascii[i] ? 0:0xFFFFFF), C_[++k])
-    Loop % 71*(oldx!=dx) + 0*(i:=nW*nH+dx)*(k:=71*25)
+    Loop 71*(oldx!=dx) + 0*(i:=nW*nH+dx)*(k:=71*25)
       this.SC((show[++i]?0xFF0000:0xFFFFAA), C_[++k])
-    ListLines % lls
+    ListLines lls
     oldx:=dx, oldy:=dy
     return
   Case "RepColor", "CutColor":
@@ -3056,14 +2960,14 @@ Gui(cmd, arg1:="", args*)
     if (CutLeft<=0) || (bg!="" && InStr(color,"**") && CutLeft=1)
       return
     k:=CutLeft-nW, CutLeft--
-    Loop % nH
+    Loop nH
       k+=nW, (A_Index>CutUp && A_Index<nH+1-CutDown && G_.Call("RepColor"))
     return
   Case "CutL":
     if (CutLeft+CutRight>=nW)
       return
     CutLeft++, k:=CutLeft-nW
-    Loop % nH
+    Loop nH
       k+=nW, (A_Index>CutUp && A_Index<nH+1-CutDown && G_.Call("CutColor"))
     return
   Case "CutL3":
@@ -3074,14 +2978,14 @@ Gui(cmd, arg1:="", args*)
     if (CutRight<=0) || (bg!="" && InStr(color,"**") && CutRight=1)
       return
     k:=1-CutRight, CutRight--
-    Loop % nH
+    Loop nH
       k+=nW, (A_Index>CutUp && A_Index<nH+1-CutDown && G_.Call("RepColor"))
     return
   Case "CutR":
     if (CutLeft+CutRight>=nW)
       return
     CutRight++, k:=1-CutRight
-    Loop % nH
+    Loop nH
       k+=nW, (A_Index>CutUp && A_Index<nH+1-CutDown && G_.Call("CutColor"))
     return
   Case "CutR3":
@@ -3092,14 +2996,14 @@ Gui(cmd, arg1:="", args*)
     if (CutUp<=0) || (bg!="" && InStr(color,"**") && CutUp=1)
       return
     k:=(CutUp-1)*nW, CutUp--
-    Loop % nW
+    Loop nW
       k++, (A_Index>CutLeft && A_Index<nW+1-CutRight && G_.Call("RepColor"))
     return
   Case "CutU":
     if (CutUp+CutDown>=nH)
       return
     CutUp++, k:=(CutUp-1)*nW
-    Loop % nW
+    Loop nW
       k++, (A_Index>CutLeft && A_Index<nW+1-CutRight && G_.Call("CutColor"))
     return
   Case "CutU3":
@@ -3110,14 +3014,14 @@ Gui(cmd, arg1:="", args*)
     if (CutDown<=0) || (bg!="" && InStr(color,"**") && CutDown=1)
       return
     k:=(nH-CutDown)*nW, CutDown--
-    Loop % nW
+    Loop nW
       k++, (A_Index>CutLeft && A_Index<nW+1-CutRight && G_.Call("RepColor"))
     return
   Case "CutD":
     if (CutUp+CutDown>=nH)
       return
     CutDown++, k:=(nH-CutDown)*nW
-    Loop % nW
+    Loop nW
       k++, (A_Index>CutLeft && A_Index<nW+1-CutRight && G_.Call("CutColor"))
     return
   Case "CutD3":
@@ -3125,19 +3029,19 @@ Gui(cmd, arg1:="", args*)
       G_.Call("CutD")
     return
   Case "Gray2Two":
-    ListLines % (lls:=A_ListLines)?0:0
-    gs:=[], k:=0
-    Loop % nW*nH
+    ListLines (lls:=A_ListLines)?0:0
+    gs:=Map(), gs.Default:=0, k:=0
+    Loop nW*nH
       gs[++k]:=((((c:=cors[k])>>16)&0xFF)*38+((c>>8)&0xFF)*75+(c&0xFF)*15)>>7
     _Gui:=FindText_Capture
     _Gui["Threshold"].Focus()
     Threshold:=_Gui["Threshold"].Value
     if (Threshold="")
     {
-      pp:=[]
+      pp:=Map(), pp.Default:=0
       Loop 256
         pp[A_Index-1]:=0
-      Loop % nW*nH
+      Loop nW*nH
         if (show[A_Index])
           pp[gs[A_Index]]++
       IP0:=IS0:=0
@@ -3148,7 +3052,7 @@ Gui(cmd, arg1:="", args*)
       {
         LastThreshold:=Threshold
         IP1:=IS1:=0
-        Loop % LastThreshold+1
+        Loop LastThreshold+1
           k:=A_Index-1, IP1+=k*pp[k], IS1+=pp[k]
         IP2:=IP0-IP1, IS2:=IS0-IS1
         if (IS1!=0 && IS2!=0)
@@ -3160,11 +3064,11 @@ Gui(cmd, arg1:="", args*)
     }
     Threshold:=Round(Threshold)
     color:="*" Threshold, k:=i:=0
-    Loop % nW*nH
+    Loop nW*nH
       ascii[++k]:=v:=(gs[k]<=Threshold)
       , (show[k] && i:=(v?i+1:i-1))
     bg:=(i>0 ? "1":"0"), G_.Call("BlackWhite")
-    ListLines % lls
+    ListLines lls
     return
   Case "GrayDiff2Two":
     _Gui:=FindText_Capture
@@ -3172,12 +3076,12 @@ Gui(cmd, arg1:="", args*)
     if (GrayDiff="")
     {
       _Gui.Opt("+OwnDialogs")
-      MsgBox, 4096, Tip, % Lang["s11"], 1
+      MsgBox Lang["s11"], "Tip", "4096 T1"
       return
     }
-    ListLines % (lls:=A_ListLines)?0:0
-    gs:=[], k:=0
-    Loop % nW*nH
+    ListLines (lls:=A_ListLines)?0:0
+    gs:=Map(), gs.Default:=0, k:=0
+    Loop nW*nH
       gs[++k]:=((((c:=cors[k])>>16)&0xFF)*38+((c>>8)&0xFF)*75+(c&0xFF)*15)>>7
     if (CutLeft=0)
       G_.Call("CutL")
@@ -3189,7 +3093,7 @@ Gui(cmd, arg1:="", args*)
       G_.Call("CutD")
     GrayDiff:=Round(GrayDiff)
     color:="**" GrayDiff, k:=i:=0
-    Loop % nW*nH
+    Loop nW*nH
       j:=gs[++k]+GrayDiff
       , ascii[k]:=v:=( gs[k-1]>j || gs[k+1]>j
       || gs[k-nW]>j || gs[k+nW]>j
@@ -3197,7 +3101,7 @@ Gui(cmd, arg1:="", args*)
       || gs[k+nW-1]>j || gs[k+nW+1]>j )
       , (show[k] && i:=(v?i+1:i-1))
     bg:=(i>0 ? "1":"0"), G_.Call("BlackWhite")
-    ListLines % lls
+    ListLines lls
     return
   Case "AddColorSim", "AddColorDiff":
     _Gui:=FindText_Capture
@@ -3205,7 +3109,7 @@ Gui(cmd, arg1:="", args*)
     if (c="")
     {
       _Gui.Opt("+OwnDialogs")
-      MsgBox, 4096, Tip, % Lang["s12"], 1
+      MsgBox Lang["s12"], "Tip", "4096 T1"
       return
     }
     s:=_Gui["ColorList"].Value
@@ -3216,7 +3120,7 @@ Gui(cmd, arg1:="", args*)
       v:=_Gui["dRGB2"].Value, v:=c "-" Format("{:06X}",v<<16|v<<8|v)
       , s:=RegExReplace("/" s, "/" c "-[^/]*") . "/" v
     _Gui["ColorList"].Value:=Trim(s,"/")
-    ControlSend,, {End}, % "ahk_id " _Gui["ColorList"].Hwnd
+    ControlSend "{End}", _Gui["ColorList"].Hwnd
     G_.Call("Color2Two")
     return
   Case "Undo2":
@@ -3224,7 +3128,7 @@ Gui(cmd, arg1:="", args*)
     s:=_Gui["ColorList"].Value
     s:=RegExReplace("/" s, "/[^/]+$")
     _Gui["ColorList"].Value:=Trim(s,"/")
-    ControlSend,, {End}, % "ahk_id " _Gui["ColorList"].Hwnd
+    ControlSend "{End}", _Gui["ColorList"].Hwnd
     return
   Case "Color2Two":
     _Gui:=FindText_Capture
@@ -3232,12 +3136,12 @@ Gui(cmd, arg1:="", args*)
     if (color="")
     {
       _Gui.Opt("+OwnDialogs")
-      MsgBox, 4096, Tip, % Lang["s16"], 1
+      MsgBox Lang["s16"], "Tip", "4096 T1"
       return
     }
-    ListLines % (lls:=A_ListLines)?0:0
+    ListLines (lls:=A_ListLines)?0:0
     k:=i:=v:=0, arr:=StrSplit(color, "/")
-    Loop % nW*nH
+    Loop nW*nH
     {
       c:=cors[++k], rr:=(c>>16)&0xFF, gg:=(c>>8)&0xFF, bb:=c&0xFF
       For k1,v1 in arr
@@ -3260,7 +3164,7 @@ Gui(cmd, arg1:="", args*)
       ascii[k]:=v, (show[k] && i:=(v?i+1:i-1))
     }
     bg:=(i>0 ? "1":"0"), G_.Call("BlackWhite")
-    ListLines % lls
+    ListLines lls
     return
   Case "ColorPos2Two":
     _Gui:=FindText_Capture
@@ -3268,24 +3172,24 @@ Gui(cmd, arg1:="", args*)
     if (c="")
     {
       _Gui.Opt("+OwnDialogs")
-      MsgBox, 4096, Tip, % Lang["s12"], 1
+      MsgBox Lang["s12"], "Tip", "4096 T1"
       return
     }
     n:=_Gui["Similar2"].Value, n:=Round(n/100,2)
     , color:="#" c "@" n, n:=Floor(4606*255*255*(1-n)*(1-n))
     , rr:=(c>>16)&0xFF, gg:=(c>>8)&0xFF, bb:=c&0xFF, k:=i:=0
-    ListLines % (lls:=A_ListLines)?0:0
-    Loop % nW*nH
+    ListLines (lls:=A_ListLines)?0:0
+    Loop nW*nH
       c:=cors[++k], r:=((c>>16)&0xFF)-rr
       , g:=((c>>8)&0xFF)-gg, b:=(c&0xFF)-bb, j:=r+rr+rr
       , ascii[k]:=v:=((1024+j)*r*r+2048*g*g+(1534-j)*b*b<=n)
       , (show[k] && i:=(v?i+1:i-1))
     bg:=(i>0 ? "1":"0"), G_.Call("BlackWhite")
-    ListLines % lls
+    ListLines lls
     return
   Case "BlackWhite":
-    Loop % 25 + 0*(ty:=dy-1)*(k:=0)
-    Loop % 71 + 0*(tx:=dx-1)*(ty++)
+    Loop 25 + 0*(ty:=dy-1)*(k:=0)
+    Loop 71 + 0*(tx:=dx-1)*(ty++)
     if (k++)*0 + (++tx)<nW && ty<nH && show[i:=ty*nW+tx+1]
       this.SC((ascii[i]?0:0xFFFFFF), C_[k])
     return
@@ -3299,7 +3203,7 @@ Gui(cmd, arg1:="", args*)
     return
   Case "Undo":
     Result:=RegExReplace(Result, ",[^/]+/[^/]+/[^/]+$")
-    ToolTip % Trim(Result,"/,")
+    ToolTip Trim(Result,"/,")
     return
   Case "Similar1", "Similar2":
     i:=(cmd="Similar1") ? "Similar2":"Similar1"
@@ -3310,22 +3214,22 @@ Gui(cmd, arg1:="", args*)
     if (bg="")
       return
     k:=0
-    ListLines % (lls:=A_ListLines)?0:0
-    Loop % nH
+    ListLines (lls:=A_ListLines)?0:0
+    Loop nH
     {
       v:=""
-      Loop % nW
+      Loop nW
         v.=!show[++k] ? "" : ascii[k] ? "1":"0"
       txt.=v="" ? "" : v "`n"
     }
-    ListLines % lls
+    ListLines lls
     return
   Case "Auto":
     G_.Call("GetTxt")
     if (txt="")
     {
       FindText_Capture.Opt("+OwnDialogs")
-      MsgBox, 4096, Tip, % Lang["s13"], 1
+      MsgBox Lang["s13"], "Tip", "4096 T1"
       return
     }
     While InStr(txt,bg)
@@ -3348,15 +3252,15 @@ Gui(cmd, arg1:="", args*)
     G_.Call("GetTxt")
     if (txt="") && (!MultiColor)
     {
-      MsgBox, 4096, Tip, % Lang["s13"], 1
+      MsgBox Lang["s13"], "Tip", "4096 T1"
       return
     }
     if InStr(color,"#") && (!MultiColor)
     {
       r:=StrSplit(color,"@","#")
       k:=i:=j:=0
-      ListLines % (lls:=A_ListLines)?0:0
-      Loop % nW*nH
+      ListLines (lls:=A_ListLines)?0:0
+      Loop nW*nH
       {
         if (!show[++k])
           Continue
@@ -3367,10 +3271,10 @@ Gui(cmd, arg1:="", args*)
           Break
         }
       }
-      ListLines % lls
+      ListLines lls
       if (j=0)
       {
-        MsgBox, 4096, Tip, % Lang["s12"], 1
+        MsgBox Lang["s12"], "Tip", "4096 T1"
         return
       }
       color:="#" j "@" r[2]
@@ -3380,13 +3284,13 @@ Gui(cmd, arg1:="", args*)
     {
       if InStr(color,"#")
       {
-        MsgBox, 4096, Tip, % Lang["s14"], 3
+        MsgBox Lang["s14"], "Tip", "4096 T3"
         return
       }
       bg:=StrLen(StrReplace(txt,"0"))
         > StrLen(StrReplace(txt,"1")) ? "1":"0"
       s:="", i:=0, k:=nW*nH+1+CutLeft
-      Loop % w:=nW-CutLeft-CutRight
+      Loop w:=nW-CutLeft-CutRight
       {
         i++
         if (!show[k++] && A_Index<w)
@@ -3409,7 +3313,7 @@ Gui(cmd, arg1:="", args*)
         if (v!="")
         {
           v:=Format("{:d}.",InStr(v,"`n")-1) . this.bit2base64(v)
-          s.="`nText.=""|<" SubStr(Comment,1,1) ">" color "$" v """`n"
+          s.="`nText.=`"|<" SubStr(Comment, 1, 1) ">" color "$" v "`"`n"
           Comment:=SubStr(Comment, 2)
         }
       }
@@ -3423,13 +3327,12 @@ Gui(cmd, arg1:="", args*)
     {
       n:=_Gui["dRGB"].Value, color:=Format("##{:06X}", n<<16|n<<8|n)
       r:=StrSplit(Trim(StrReplace(Result, ",", "/"), "/"), "/")
-      , n:=r.Length(), x:=(n>2?r[1]:0), y:=(n>2?r[2]:0), s:="", i:=1
-      SetFormat, IntegerFast, d
-      Loop % n//3
+      , n:=r.Length, x:=(n>2?r[1]:0), y:=(n>2?r[2]:0), s:="", i:=1
+      Loop n//3
         s.="," (r[i++]-x) "/" (r[i++]-y) "/" r[i++]
       txt:=SubStr(s,2)
     }
-    s:="`nText.=""|<" Comment ">" color "$" txt """`n"
+    s:="`nText.=`"|<" Comment ">" color "$" txt "`"`n"
     if (cmd="AllAdd")
     {
       Event:=cmd, Result:=s
@@ -3440,18 +3343,18 @@ Gui(cmd, arg1:="", args*)
     y:=nY+CutUp+(nH-CutUp-CutDown)//2
     s:=StrReplace(s, "Text.=", "Text:="), r:=StrSplit(Lang["s8"] "|||||||", "|")
     s:="`; #Include <FindText>`n"
-    . "`nt1:=A_TickCount, Text:=X:=Y:=""""`n" s
-    . "`nif (ok:=FindText(X, Y, " x "-150000, "
+    . "`nt1:=A_TickCount, Text:=X:=Y:=`"`"`n" s
+    . "`nif (ok:=FindText(&X, &Y, " x "-150000, "
     . y "-150000, " x "+150000, " y "+150000, 0, 0, Text))"
     . "`n{"
-    . "`n  `; FindText()." . "Click(" . "X, Y, ""L"")"
+    . "`n  `; FindText()." . "Click(" . "X, Y, `"L`")"
     . "`n}`n"
-    . "`n`; ok:=FindText(X:=""wait"", Y:=3, 0,0,0,0,0,0,Text)    `; " r[7]
-    . "`n`; ok:=FindText(X:=""wait0"", Y:=-1, 0,0,0,0,0,0,Text)  `; " r[8]
-    . "`n`nMsgBox, 4096, Tip, `% """ r[1] ":``t"" (IsObject(ok)?ok.Length():ok)"
-    . "`n  . ""``n``n" r[2] ":``t"" (A_TickCount-t1) "" " r[3] """"
-    . "`n  . ""``n``n" r[4] ":``t"" X "", "" Y"
-    . "`n  . ""``n``n" r[5] ":``t<"" (IsObject(ok)?ok[1].id:"""") "">""`n"
+    . "`n`; ok:=FindText(&X:=`"wait`", &Y:=3, 0,0,0,0,0,0,Text)  `; " r[7]
+    . "`n`; ok:=FindText(&X:=`"wait0`", &Y:=-1, 0,0,0,0,0,0,Text)  `; " r[8]
+    . "`n`nMsgBox `"" r[1] ":``t`" (IsObject(ok)?ok.Length:ok)"
+    . "`n  . `"``n``n" r[2] ":``t`" (A_TickCount-t1) `" " r[3] "`""
+    . "`n  . `"``n``n" r[4] ":``t`" X `", `" Y"
+    . "`n  . `"``n``n" r[5] ":``t<`" (IsObject(ok)?ok[1].id:`"`") `">`", `"Tip`", 4096`n"
     . "`nTry For i,v in ok  `; ok " r[6] " ok:=FindText().ok"
     . "`n  if (i<=2)"
     . "`n    FindText().MouseTip(ok[i].x, ok[i].y)`n"
@@ -3464,8 +3367,8 @@ Gui(cmd, arg1:="", args*)
     G_.Call("ScreenShot", x "|" y "|" (x+w-1) "|" (y+h-1) "|0")
     return
   Case "ShowPic":
-    ControlGet, i, CurrentLine,,, ahk_id %hscr%
-    ControlGet, s, Line, %i%,, ahk_id %hscr%
+    i:=EditGetCurrentLine(hscr)
+    s:=EditGetLine(i, hscr)
     FindText_Main["MyPic"].Value:=Trim(this.ASCII(s),"`n")
     return
   Case "KeyDown":
@@ -3475,7 +3378,7 @@ Gui(cmd, arg1:="", args*)
     _Gui:=FindText_Main
     Try ctrl:="", ctrl:=args[3]
     if (ctrl=hscr)
-      SetTimer, %G_ShowPic%, -150
+      SetTimer G_ShowPic, -150
     else if (ctrl=_Gui["ClipText"].Hwnd)
     {
       s:=_Gui["ClipText"].Value
@@ -3486,23 +3389,23 @@ Gui(cmd, arg1:="", args*)
     Critical
     if (WinExist()!=FindText_Capture.Hwnd)
       return G_.Call("KeyDown", arg1, args*)
-    CoordMode, Mouse
-    MouseGetPos, k1, k2,, k6, 2
+    CoordMode "Mouse"
+    MouseGetPos &k1, &k2,, &k6, 2
     if (k6=hPic)
     {
-      ListLines % (lls:=A_ListLines)?0:0
+      ListLines (lls:=A_ListLines)?0:0
       Loop
       {
         Sleep 50
-        MouseGetPos, k3, k4
+        MouseGetPos &k3, &k4
         this.RangeTip(Min(k1,k3), Min(k2,k4)
         , Abs(k1-k3)+1, Abs(k2-k4)+1, (A_MSec<500 ? "Red":"Blue"))
       }
       Until !this.State("LButton")
-      ListLines % lls
+      ListLines lls
       this.RangeTip()
-      this.GetBitsFromScreen(,,,,0,zx,zy)
-      this.ClientToScreen(sx, sy, 0, 0, hPic)
+      this.GetBitsFromScreen(,,,,0,&zx,&zy)
+      this.ClientToScreen(&sx, &sy, 0, 0, hPic)
       sx:=Min(k1,k3)-sx+hBM_x+zx, sy:=Min(k2,k4)-sy+hBM_y+zy
       , sw:=Abs(k1-k3)+1, sh:=Abs(k2-k4)+1
       if (sw+sh)<5
@@ -3511,14 +3414,14 @@ Gui(cmd, arg1:="", args*)
       FindText_Capture["MyTab1"].Choose(1)
       return
     }
-    if !(Cid_.HasKey(k6) && k5:=Cid_[k6])
+    if !(Cid_.Has(k6) && k5:=Cid_[k6])
       return
     if (k5=-1)
     {
-      MouseMove, k1+2, k2+2, 0
-      MouseGetPos,,,, k6, 2
-      MouseMove, k1, k2, 0
-      if !(Cid_.HasKey(k6) && k5:=Cid_[k6]) || (k5=-1)
+      MouseMove k1+2, k2+2, 0
+      MouseGetPos(,,, &k6, 2)
+      MouseMove k1, k2, 0
+      if !(Cid_.Has(k6) && k5:=Cid_[k6]) || (k5=-1)
         return
     }
     if (k5>71*25)
@@ -3535,7 +3438,7 @@ Gui(cmd, arg1:="", args*)
     {
       k2:=Format(",{:d}/{:d}/{:06X}", nX+k3, nY+k4, cors[k1]&0xFFFFFF)
       , Result.=InStr(Result,k2) ? "":k2
-      ToolTip % Trim(Result,"/,")
+      ToolTip Trim(Result,"/,")
     }
     if (Modify && bg!="" && show[k1])
       this.SC(((ascii[k1]:=!ascii[k1])?0:0xFFFFFF), k6)
@@ -3552,22 +3455,22 @@ Gui(cmd, arg1:="", args*)
     return
   Case "RButtonDown":
     Critical
-    MouseGetPos,,,, k2, 2
+    MouseGetPos(,,, &k2, 2)
     if (k2!=hPic)
       return
-    CoordMode, Mouse
-    MouseGetPos, k1, k2
+    CoordMode "Mouse"
+    MouseGetPos &k1, &k2
     k5:=hBM_x, k6:=hBM_y
-    ListLines % (lls:=A_ListLines)?0:0
+    ListLines (lls:=A_ListLines)?0:0
     Loop
     {
       Sleep 10
-      MouseGetPos, k3, k4
+      MouseGetPos &k3, &k4
       hBM_x:=k5+k1-k3, hBM_y:=k6+k2-k4
       G_.Call("PicShow")
     }
     Until !this.State("RButton")
-    ListLines % lls
+    ListLines lls
     return
   Case "MouseMove":
     Try ctrl_name:="", ctrl_name:=GuiCtrlFromHwnd(args[3]).Name
@@ -3575,14 +3478,14 @@ Gui(cmd, arg1:="", args*)
     {
       ToolTip
       PrevControl:=ctrl_name
-      Try SetTimer, % G_ToolTip, % (PrevControl ? -500:"Off")
-      Try SetTimer, % G_ToolTipOff, % (PrevControl ? -5500:"Off")
+      Try SetTimer G_ToolTip, (PrevControl ? -500:0)
+      Try SetTimer G_ToolTipOff, (PrevControl ? -5500:0)
     }
     return
   Case "ToolTip":
-    MouseGetPos,,, _TT
+    MouseGetPos(,, &_TT)
     if WinExist("ahk_id " _TT " ahk_class AutoHotkeyGUI")
-      Try ToolTip % Tip_Text[PrevControl]
+      Try ToolTip Tip_Text[PrevControl]
     return
   Case "ToolTipOff":
     ToolTip
@@ -3601,28 +3504,27 @@ Gui(cmd, arg1:="", args*)
     FindText_Main["MyPic"].Value:=Trim(s,"`n")
     return
   Case "Update":
-    ControlFocus,, % "ahk_id " hscr
-    ControlGet, i, CurrentLine,,, ahk_id %hscr%
-    ControlGet, s, Line, %i%,, ahk_id %hscr%
-    if !RegExMatch(s, "O)(<[^>\n]*>[^$\n]+\$)\d+\.[\w+/]+", r)
+    ControlFocus hscr
+    i:=EditGetCurrentLine(hscr)
+    s:=EditGetLine(i, hscr)
+    if !RegExMatch(s, "(<[^>\n]*>[^$\n]+\$)\d+\.[\w+/]+", &r)
       return
     v:=FindText_Main["MyPic"].Value
     v:=Trim(v,"`n") . "`n", w:=Format("{:d}",InStr(v,"`n")-1)
     v:=StrReplace(StrReplace(v,"0","1"),"_","0")
     s:=StrReplace(s, r[0], r[1] . w "." this.bit2base64(v))
     v:="{End}{Shift Down}{Home}{Shift Up}{Del}"
-    ControlSend,, %v%, ahk_id %hscr%
-    Control, EditPaste, %s%,, ahk_id %hscr%
-    ControlSend,, {Home}, ahk_id %hscr%
+    ControlSend v, hscr
+    EditPaste s, hscr
+    ControlSend "{Home}", hscr
     return
   }
 }
 
 Lang(text:="", getLang:=0)
 {
-  local
-  static init, Lang1, Lang2
-  if !VarSetCapacity(init) && (init:="1")
+  static Lang1:="", Lang2
+  if (!Lang1)
   {
     s:="
     (
@@ -3724,407 +3626,13 @@ s17 = The picture you want to open was not found !
 s18 = Capture|ScreenShot
 s19 = Are you sure to delete all screenshots ?
     )"
-    Lang1:=[], Lang2:=[]
-    Loop Parse, s, `n, `r
+    Lang1:=Map(), Lang1.Default:="", Lang2:=Map(), Lang2.Default:=""
+    Loop Parse, s, "`n", "`r"
       if InStr(v:=A_LoopField, "=")
         r:=StrSplit(StrReplace(v "==","\n","`n"), "=", "`t ")
         , Lang1[r[1]]:=r[2], Lang2[r[1]]:=r[3]
   }
   return getLang=1 ? Lang1 : getLang=2 ? Lang2 : Lang1[text]
-}
-
-}  ;// Class End
-
-
-;---------------------------------
-; Gui-V1-V2 Compatibility Library  By FeiYue
-;---------------------------------
-
-Gui(args*) {
-  return new GuiCreate(args*)
-}
-
-GuiFromHwnd(hwnd:="AllGuiObj", RecurseParent:=0) {
-  static init, AllGuiObj
-  if !VarSetCapacity(init) && (init:="1")
-    AllGuiObj:=[]
-  if (hwnd=="AllGuiObj")
-    return AllGuiObj
-  if (RecurseParent)
-    While hwnd && !AllGuiObj.HasKey(hwnd)
-      hwnd:=DllCall("GetParent", "Ptr",hwnd, "Ptr")
-  return AllGuiObj[hwnd]
-}
-
-GuiCtrlFromHwnd(hwnd) {
-  return GuiFromHwnd(hwnd,1)[hwnd]
-}
-
-Class GuiCreate {
-
-  __New(opts:="", title:="", args*) {
-    local
-    Gui, New, % opts " +Hwndhwnd +LabelGuiCreate.Gui", % title
-    this.Hwnd:=hwnd, this.ClassNN:=[]
-    GuiFromHwnd()[hwnd]:=this
-  }
-
-  __Delete() {
-    this.Destroy()
-  }
-
-  Destroy() {
-    local
-    if !(hwnd:=this.Hwnd)
-      return
-    this.Hwnd:="", GuiFromHwnd().Delete(hwnd)
-    Try Gui, % hwnd ":Destroy"
-    For k,v in this
-      (v.Hwnd && v.Hwnd:=""), this[k]:=""
-  }
-
-  OnEvent(EventName, Callback, AddRemove:=1) {
-    if IsObject(Callback)
-      this["_" EventName]:=Callback
-  }
-
-  GuiClose(args*) {
-    return GuiFromHwnd(WinExist())["_Close"].Call(0,args*)
-  }
-
-  GuiEscape(args*) {
-    return GuiFromHwnd(WinExist())["_Escape"].Call(0,args*)
-  }
-
-  GuiSize(args*) {
-    return GuiFromHwnd(WinExist())["_Size"].Call(0,args*)
-  }
-
-  GuiContextMenu(args*) {
-    return GuiFromHwnd(WinExist())["_ContextMenu"].Call(0,args*)
-  }
-
-  GuiDropFiles(args*) {
-    return GuiFromHwnd(WinExist())["_DropFiles"].Call(0,0,args*)
-  }
-
-  Opt(opts) {
-    Gui, % this.Hwnd ":" RegExReplace(opts,"i)[+\-\s]Label\S*")
-  }
-
-  Add(type, opts:="", text:="") {
-    local
-    static init, type2class
-    if !VarSetCapacity(init) && (init:="1")
-      type2class:=[]
-    type:=(type="DropDownList"?"DDL":type="Picture"?"Pic":type)
-    name:=RegExMatch(opts,"i)(^|[+\-\s])V(?!Scroll\b|ertical\b)\K\S*",r)?r:""
-    opts:=RegExReplace(opts,"i)(^|[+\-\s])V(?!Scroll\b|ertical\b)\S*")
-    if IsObject(text)
-    {
-      s:=""
-      For k,v in text
-        s.="|" v
-      text:=Trim(s, "|")
-    }
-    Gui, % this.Hwnd ":Add", % type, % opts " +Hwndhwnd", % text
-    this.LastHwnd:=hwnd
-    if type2class.HasKey(type)
-      s:=type2class[type]
-    else
-    {
-      WinGetClass, s, ahk_id %hwnd%
-      type2class[type]:=s
-    }
-    this.ClassNN[s]:=n:=Floor(this.ClassNN[s])+1, classnn:=s . n
-    obj:= new this.Control(this.Hwnd, hwnd, type, classnn, name)
-    this[hwnd]:=obj, this[classnn]:=obj
-    if (name) && !(name~="i)^(Destroy|OnEvent|Opt|Add"
-    . "|SetFont|Show|Hide|Move|GetClientPos|GetPos|Maximize"
-    . "|Minimize|Restore|Flash|Submit|Hwnd|Name|Title"
-    . "|BackColor|MarginX|MarginY|MenuBar|FocusedCtrl)$")
-      this[name]:=obj
-    return obj
-  }
-
-  SetFont(opts:="", FontName:="") {
-    Gui, % this.Hwnd ":Font", % opts, % FontName
-  }
-
-  Show(opts:="", args*) {
-    Gui, % this.Hwnd ":Show", % opts
-  }
-
-  Hide() {
-    Gui, % this.Hwnd ":Hide"
-  }
-
-  Move(x:="", y:="", w:="", h:="") {
-    local
-    this.GetPos(pX, pY, pW, pH)
-    x:=(x=""?pX:x), y:=(y=""?pY:y), w:=(w=""?pW:w), h:=(h=""?pH:h)
-    DllCall("MoveWindow", "Ptr",this.Hwnd, "int",x, "int",y, "int",w, "int",h, "int",1)
-  }
-
-  GetClientPos(ByRef x:="", ByRef y:="", ByRef w:="", ByRef h:="") {
-    local
-    VarSetCapacity(rect, 16, 0)
-    , DllCall("GetClientRect",  "Ptr",this.Hwnd, "Ptr",&rect)
-    , DllCall("ClientToScreen", "Ptr",this.Hwnd, "Ptr",&rect)
-    , x:=NumGet(rect, 0, "int"), y:=NumGet(rect, 4, "int")
-    , w:=NumGet(rect, 8, "int")-x, h:=NumGet(rect, 12, "int")-y
-  }
-
-  GetPos(ByRef x:="", ByRef y:="", ByRef w:="", ByRef h:="") {
-    local
-    VarSetCapacity(rect, 16, 0)
-    , DllCall("GetWindowRect",  "Ptr",this.Hwnd, "Ptr",&rect)
-    , x:=NumGet(rect, 0, "int"), y:=NumGet(rect, 4, "int")
-    , w:=NumGet(rect, 8, "int")-x, h:=NumGet(rect, 12, "int")-y
-  }
-
-  Maximize() {
-    Gui, % this.Hwnd ":Maximize"
-  }
-
-  Minimize() {
-    Gui, % this.Hwnd ":Minimize"
-  }
-
-  Restore() {
-    Gui, % this.Hwnd ":Restore"
-  }
-
-  Flash(k:=1) {
-    Gui, % this.Hwnd ":Flash", % k ? "":"Off"
-  }
-
-  Submit(hide:=1) {
-    local
-    (hide && this.Hide()), arr:=[]
-    For k,v in this
-      if k is number
-        if (v.Name!="")
-          arr[v.Name]:=v.Value
-    return arr
-  }
-
-  BackColor {
-    get {
-      return this._BackColor
-    }
-    set {
-      this._BackColor:=value
-      Gui, % this.Hwnd ":Color", % value
-      return value
-    }
-  }
-
-  MarginX {
-    get {
-      return this._MarginX
-    }
-    set {
-      this._MarginX:=value
-      Gui, % this.Hwnd ":Margin", % value
-      return value
-    }
-  }
-
-  MarginY {
-    get {
-      return this._MarginY
-    }
-    set {
-      this._MarginY:=value
-      Gui, % this.Hwnd ":Margin",, % value
-      return value
-    }
-  }
-
-  MenuBar {
-    get {
-      return this._MenuBar
-    }
-    set {
-      this._MenuBar:=value
-      Gui, % this.Hwnd ":Menu", % value
-      return value
-    }
-  }
-
-  Title {
-    get {
-      local
-      VarSetCapacity(v, 260*2)
-      DllCall("GetWindowText", "Ptr",this.Hwnd, "Str",v, "Int",260)
-      return v
-    }
-    set {
-      DllCall("SetWindowText", "Ptr",this.Hwnd, "Str",value)
-      return value
-    }
-  }
-
-  FocusedCtrl {
-    get {
-      local
-      GuiControlGet, v, % this.Hwnd ":Focus"
-      return this[v]
-    }
-  }
-
-  ;========  Sub Class =========
-
-  Class Control {
-
-  __New(GuiHwnd, hwnd, type, classnn, name) {
-    this.GuiHwnd:=GuiHwnd, this.Hwnd:=hwnd
-    this.Type:=type, this.ClassNN:=classnn, this.Name:=name
-  }
-
-  Opt(opts) {
-    GuiControl, % opts, % this.Hwnd
-  }
-
-  OnEvent(EventName, Callback, AddRemove:=1) {
-    local
-    r:=this.OnEvent_G.Bind(this, Callback)
-    GuiControl, +g, % this.Hwnd, % r
-  }
-
-  OnEvent_G(Callback, args*) {
-    if IsObject(Callback)
-      return %Callback%(this, args*)
-  }
-
-  GetPos(ByRef x:="", ByRef y:="", ByRef w:="", ByRef h:="") {
-    local
-    GuiControlGet, p, Pos, % this.Hwnd
-    x:=Floor(pX), y:=Floor(pY), w:=Floor(pW), h:=Floor(pH)
-  }
-
-  Move(x:="", y:="", w:="", h:="") {
-    local
-    s:=(x=""?"":" x" x) (y=""?"":" y" y) (w=""?"":" w" w) (h=""?"":" h" h)
-    GuiControl, Move, % this.Hwnd, % s
-  }
-
-  Redraw() {
-    GuiControl, MoveDraw, % this.Hwnd
-  }
-
-  Focus() {
-    GuiControl, Focus, % this.Hwnd
-  }
-
-  UseTab(Name:="", Exact:="", index:="") {
-    Gui, % this.GuiHwnd ":Tab", % Name, % index, % Exact?"Exact":""
-  }
-
-  SetFont(opts:="", FontName:="") {
-    Gui, % this.GuiHwnd ":Font", % opts, % FontName
-    GuiControl, Font, % this.Hwnd
-  }
-
-  Add(text) {
-    local
-    if IsObject(text)
-    {
-      s:=""
-      For k,v in text
-        s.="|" v
-      text:=Trim(s, "|")
-    }
-    GuiControl,, % this.Hwnd, % text
-  }
-
-  Delete(N:="") {
-    if (N="")
-      GuiControl,, % this.Hwnd, |
-    else
-      this.Choose(N), this.Choose(0)
-  }
-
-  Choose(N) {
-    if N is number
-      GuiControl, Choose, % this.Hwnd, % N
-    else
-      GuiControl, ChooseString, % this.Hwnd, % N
-  }
-
-  Gui {
-    get {
-      return GuiFromHwnd(this.GuiHwnd)
-    }
-  }
-
-  Enabled {
-    get {
-      local
-      GuiControlGet, v, Enabled, % this.Hwnd
-      return v
-    }
-    set {
-      GuiControl, % "Enable" (!!value), % this.Hwnd
-      return value
-    }
-  }
-
-  Visible {
-    get {
-      local
-      GuiControlGet, v, Visible, % this.Hwnd
-      return v
-    }
-    set {
-      GuiControl, % "Show" (!!value), % this.Hwnd
-      return value
-    }
-  }
-
-  Focused {
-    get {
-      local
-      GuiControlGet, v, % this.GuiHwnd ":Focus"
-      return (v=this.ClassNN)
-    }
-  }
-
-  Value {
-    get {
-      local
-      if (this.Type~="i)^(ListBox|DDL|ComboBox|Tab)$")
-        this.Opt("+AltSubmit")
-      GuiControlGet, v,, % this.Hwnd
-      return v
-    }
-    set {
-      if (this.Type~="i)^(ListBox|DDL|ComboBox|Tab)$")
-        GuiControl, Choose, % this.Hwnd, % value
-      else
-        GuiControl,, % this.Hwnd, % value
-      return value
-    }
-  }
-
-  Text {
-    get {
-      local
-      if (this.Type~="i)^(ListBox|DDL|ComboBox|Tab)$")
-        this.Opt("-AltSubmit")
-      GuiControlGet, v,, % this.Hwnd
-      return v
-    }
-    set {
-      if (this.Type~="i)^(ListBox|DDL|ComboBox|Tab)$")
-        GuiControl, ChooseString, % this.Hwnd, % value
-      else
-        GuiControl,, % this.Hwnd, % value
-      return value
-    }
-  }
-
 }
 
 Script_End() {
