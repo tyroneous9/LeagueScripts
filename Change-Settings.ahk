@@ -10,23 +10,25 @@ controlDict["Spell 3"] := "e"
 controlDict["Spell 4"] := "r"
 controlDict["Sum 1"] := "d"
 controlDict["Sum 2"] := "f"
-controlDict["Attack Move"] := "a"
 controlDict["Hold to Level"] := "ctrl"
 controlDict["Shop"] := "p"
 controlDict["Center camera"] := "space"
-controlDict["Item slots"] := "1,2,3,4,5,6,7"
-controlDict["Select Ally"] := "F2,F3,F4,F5"
-controlDict["Scroll Camera"] := "up,down,left,right"
+controlDict["Item 1"] := "1"
+controlDict["Item 2"] := "2"
+controlDict["Item 3"] := "3"
+controlDict["Item 4"] := "5"
+controlDict["Item 5"] := "6"
+controlDict["Item 6"] := "7"
+controlDict["Select Ally 1"] := "F2"
+controlDict["Select Ally 2"] := "F3"
+controlDict["Select Ally 3"] := "F4"
+controlDict["Select Ally 4"] := "F5"
 controlDict["Recall"] := "b"
-controlDict["Champion"] := " "
+controlDict["Champion name"] := " "
 defaultDict := controlDict.Clone()
-path := A_ScriptDir "\config.cfg"
-
-; Notes
-notes := "Attack Move = Attack Move Only Click.`nYou will likely need to bind this ingame.`n`n"
-myGui.add("text", , notes)
 
 ; Create GUI
+path := A_ScriptDir "\config\controls.cfg"
 infile := FileOpen(path, "r")
 if (!infile) {
     infile := FileOpen(path, "w")

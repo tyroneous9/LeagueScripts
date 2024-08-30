@@ -12,7 +12,7 @@ RunGame() {
     static loaded := false
     MAX_ORDER := [Sim.SPELL_4,Sim.SPELL_1,Sim.SPELL_2,Sim.SPELL_3]
     CAST_ORDER := [Sim.SPELL_4,Sim.SPELL_1,Sim.SPELL_2,Sim.SPELL_3]
-    ACTIVE_RANGE := 615
+    ACTIVE_RANGE := 550
 	
     ;START LOOP
     loop {
@@ -57,21 +57,12 @@ RunGame() {
 			}
 		}
 		Send("{" Sim.CENTER_CAMERA " up}")
-	} else if (AllyPosXY := Sim.ImageFinder.FindAllyXY()) { 
-		;move toward ally
-		Sim.MoveCursorRandom(AllyPosXY[1], AllyPosXY[2], 200)
-		Click "Right"
-		Send("{" Sim.CENTER_CAMERA " down}")
-		Send("{" Sim.CENTER_CAMERA " up}")
-		Sleep 300
 	} else { 
-		;move randomly
-		Send("{" Sim.CENTER_CAMERA " down}")
-		Sim.MoveCursorRandom(Sim.SCREEN_CENTER[1], Sim.SCREEN_CENTER[2], 400)
-		Click "Right"
-		Click "Left"
-		Send("{" Sim.CENTER_CAMERA " up}")
-		Sleep 600
+		;move toward ally
+		Send("{" Sim.SELECT_ALLY_1 "}")
+		Sim.MoveCursorRandom(Sim.SCREEN_CENTER[1], Sim.SCREEN_CENTER[2], 200)
+		Click("Right")
+		Sleep 300
 	}
 
     } ;END LOOP

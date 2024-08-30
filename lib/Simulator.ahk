@@ -11,13 +11,19 @@ class Simulator {
         this.GAME_PROCESS := "League of Legends (TM) Client"
         
         ; Controls
-        this.ATTACK_MOVE := ""
         this.CENTER_CAMERA := ""
         this.HOLD_TO_LEVEL := ""
-        this.ITEM_SLOTS_ARR := []
+        this.ITEM_1 := ""
+        this.ITEM_2 := ""
+        this.ITEM_3 := ""
+        this.ITEM_4 := ""
+        this.ITEM_5 := ""
+        this.ITEM_6 := ""
         this.RECALL := ""
-        this.SCROLL_CAM_ARR := []
-        this.SELECT_ALLY_ARR := []
+        this.SELECT_ALLY_1 := ""
+        this.SELECT_ALLY_2 := ""
+        this.SELECT_ALLY_3 := ""
+        this.SELECT_ALLY_4 := ""
         this.SHOP := ""
         this.SPELL_1 := ""
         this.SPELL_2 := ""
@@ -28,7 +34,7 @@ class Simulator {
         
         ; Other
         this.ImageFinder := ImageFinder()
-
+    
         ; Load config file
         infile := FileOpen(A_ScriptDir "\config\controls.cfg", "r")
         if (!infile) {
@@ -37,27 +43,41 @@ class Simulator {
         }
         configFileContent := infile.read()
         infile.Close()
-
+    
         ; Parsing config file
         lines := StrSplit(configFileContent, "`n", "`r")
         for index, line in lines {
             keyValue := StrSplit(line, "=")
             if (keyValue.Length >= 2) {
                 Switch keyValue[1] {
-                    case "Attack Move":
-                        this.ATTACK_MOVE := keyValue[2]
                     case "Center camera":
                         this.CENTER_CAMERA := keyValue[2]
+                    case "Champion name":
+                        this.CHAMPION := keyValue[2]
                     case "Hold to Level":
                         this.HOLD_TO_LEVEL := keyValue[2]
-                    case "Item slots":
-                        this.ITEM_SLOTS_ARR := StrSplit(keyValue[2], ",")
+                    case "Item 1":
+                        this.ITEM_1 := keyValue[2]
+                    case "Item 2":
+                        this.ITEM_2 := keyValue[2]
+                    case "Item 3":
+                        this.ITEM_3 := keyValue[2]
+                    case "Item 4":
+                        this.ITEM_4 := keyValue[2]
+                    case "Item 5":
+                        this.ITEM_5 := keyValue[2]
+                    case "Item 6":
+                        this.ITEM_6 := keyValue[2]
                     case "Recall":
                         this.RECALL := keyValue[2]
-                    case "Scroll Camera":
-                        this.SCROLL_CAM_ARR := StrSplit(keyValue[2], ",")
-                    case "Select Ally":
-                        this.SELECT_ALLY_ARR := StrSplit(keyValue[2], ",")
+                    case "Select Ally 1":
+                        this.SELECT_ALLY_1 := keyValue[2]
+                    case "Select Ally 2":
+                        this.SELECT_ALLY_2 := keyValue[2]
+                    case "Select Ally 3":
+                        this.SELECT_ALLY_3 := keyValue[2]
+                    case "Select Ally 4":
+                        this.SELECT_ALLY_4 := keyValue[2]
                     case "Shop":
                         this.SHOP := keyValue[2]
                     case "Spell 1":
@@ -72,12 +92,10 @@ class Simulator {
                         this.SUM_1 := keyValue[2]
                     case "Sum 2":
                         this.SUM_2 := keyValue[2]
-                    case "Champion":
-                        this.CHAMPION := keyValue[2]
                 }
             }
         }
-    }
+    }    
 
 /*
 -------------------------------
@@ -267,26 +285,20 @@ FollowAlly(ally, offset) {
     Send("{" ally " up}")
 }
 
-;Attack enemy with specified cast order and items
+;Attack enemy with specified cast order
 AttackEnemy(CAST_ORDER, &EnemyPosXY) {
+    Click("Right")
     Loop CAST_ORDER.Length {
         DllCall("SetCursorPos", "int", EnemyPosXY[1], "int", EnemyPosXY[2])
-        Send("{" this.ATTACK_MOVE "}")
         ability := CAST_ORDER[A_Index]
         Send(ability)
-        Sleep(100)
     }
-    Loop this.ITEM_SLOTS_ARR.Length {
-        SlotKey := this.ITEM_SLOTS_ARR[A_Index]
-        Send("{" SlotKey "}")
-    }
-}
-
-AttackMove(msDelay) {
-    Send("{" this.ATTACK_MOVE "}")
-    Sleep(msDelay)
-    Click("Right")
-    Sleep(msDelay)
+    Send("{" this.ITEM_1 "}")
+    Send("{" this.ITEM_2 "}")
+    Send("{" this.ITEM_3 "}")
+    Send("{" this.ITEM_4 "}")
+    Send("{" this.ITEM_5 "}")
+    Send("{" this.ITEM_6 "}")
 }
 
 ;Moves in opposite direction of enemy
@@ -359,50 +371,27 @@ ImageFound(searchResult) {
 
 ; Prints all keys
 PrintKeys() {
-    controls := [
-        this.ATTACK_MOVE,
-        this.CENTER_CAMERA,
-        this.HOLD_TO_LEVEL,
-        this.RECALL,
-        this.SHOP,
-        this.SPELL_1,
-        this.SPELL_2,
-        this.SPELL_3,
-        this.SPELL_4,
-        this.SUM_1,
-        this.SUM_2
-    ]
-
-    ; Print keys string
-    pressedKeys := "List of keys:`n"
-
-    ; Press single keys
-    for index, control in controls {
-        if (control != "") {
-            pressedKeys .= control . "`n" 
-        }
-    }
-
-    ; Press item slots
-    for index, slot in this.ITEM_SLOTS_ARR {
-        if (slot != "") {
-            pressedKeys .= slot . "`n"
-        }
-    }
-
-    ; Press select ally controls
-    for index, ally in this.SELECT_ALLY_ARR {
-        if (ally != "") {
-            pressedKeys .= ally . "`n"
-        }
-    }
-
-    ; Press scroll camera controls
-    for index, scroll in this.SCROLL_CAM_ARR {
-        if (scroll != "") {
-            pressedKeys .= scroll . "`n"
-        }
-    }
+    ; Concat keys to string
+    pressedKeys .= "Center Camera: " this.CENTER_CAMERA . "`n"
+    pressedKeys .= "Hold to Level: " this.HOLD_TO_LEVEL . "`n"
+    pressedKeys .= "Recall: " this.RECALL . "`n"
+    pressedKeys .= "Shop: " this.SHOP . "`n"
+    pressedKeys .= "Spell 1: " this.SPELL_1 . "`n"
+    pressedKeys .= "Spell 2: " this.SPELL_2 . "`n"
+    pressedKeys .= "Spell 3: " this.SPELL_3 . "`n"
+    pressedKeys .= "Spell 4: " this.SPELL_4 . "`n"
+    pressedKeys .= "Sum 1: " this.SUM_1 . "`n"
+    pressedKeys .= "Sum 2: " this.SUM_2 . "`n"
+    pressedKeys .= "Item 1: " this.ITEM_1 . "`n"
+    pressedKeys .= "Item 2: " this.ITEM_2 . "`n"
+    pressedKeys .= "Item 3: " this.ITEM_3 . "`n"
+    pressedKeys .= "Item 4: " this.ITEM_4 . "`n"
+    pressedKeys .= "Item 5: " this.ITEM_5 . "`n"
+    pressedKeys .= "Item 6: " this.ITEM_6 . "`n"
+    pressedKeys .= "Select Ally 1: " this.SELECT_ALLY_1 . "`n"
+    pressedKeys .= "Select Ally 2: " this.SELECT_ALLY_2 . "`n"
+    pressedKeys .= "Select Ally 3: " this.SELECT_ALLY_3 . "`n"
+    pressedKeys .= "Select Ally 4: " this.SELECT_ALLY_4 . "`n"
 
     ; Display the pressed keys in a message box
     MsgBox pressedKeys
