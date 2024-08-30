@@ -1,4 +1,4 @@
-﻿#Include <Simulator>
+#Include <Simulator>
 
 /*
 -------------------------------

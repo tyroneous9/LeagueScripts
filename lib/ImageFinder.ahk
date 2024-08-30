@@ -1,69 +1,80 @@
-﻿;A_ScriptDir MUST BE IN LEAGUE_SCRIPTS
-SetWorkingDir(A_ScriptDir "\resources")
+﻿class ImageFinder {
 
-;Functions
+__New() {
+    WinGetPos &X, &Y, &W, &H, "A"
+    this.X1 := X
+    this.Y1 := Y
+    this.X2 := X+W
+    this.Y2 := Y+H
+    this.ImagesFolder := "assets"
+}
+
 TestImageFinder() {
-    ShopCoords := ShopOpen()
-    MouseMove(ShopCoords[1], ShopCoords[2])
+    if (image := this.ShopOpen())
+        MouseMove(image[1], image[2])
+    else 
+        msgbox "not found"
 }
 
 FindPlayerXY(){
-    ErrorLevel := !ImageSearch(&playerHealthX, &playerHealthY, 0, 0, A_ScreenWidth, A_ScreenHeight, "*10 player_health.PNG")
-    if !ErrorLevel
-        return [playerHealthX+.02*A_ScreenWidth,playerHealthY+.13*A_ScreenHeight]
+    ok := ImageSearch(&foundX, &foundY, this.X1, this.Y1, this.X2, this.Y2, "*10 " this.ImagesFolder "\player_health.PNG")
+    if ok
+        return [foundX+.02*A_ScreenWidth,foundY+.13*A_ScreenHeight]
 }
 
 FindAllyXY(){
-    ErrorLevel := !ImageSearch(&allyHealthX, &allyHealthY, 0, 0, A_ScreenWidth, A_ScreenHeight, "*10 ally_health.PNG")
-    if !ErrorLevel
-        return [allyHealthX+.02*A_ScreenWidth,allyHealthY+.13*A_ScreenHeight]
+    ok := ImageSearch(&foundX, &foundY, this.X1, this.Y1, this.X2, this.Y2, "*10 " this.ImagesFolder "\ally_health.PNG")
+    if ok
+        return [foundX+.02*A_ScreenWidth,foundY+.13*A_ScreenHeight]
 }
 
 FindEnemyXY(){
-    ErrorLevel := !ImageSearch(&enemyHealthX, &enemyHealthY, 0, 0, A_ScreenWidth, A_ScreenHeight, "*10 enemy_health.PNG")
-    if !ErrorLevel
-        return [enemyHealthX+.02*A_ScreenWidth,enemyHealthY+.13*A_ScreenHeight]
+    ok := ImageSearch(&foundX, &foundY, this.X1, this.Y1, this.X2, this.Y2, "*10 " this.ImagesFolder "\enemy_health.PNG")
+    if ok
+        return [foundX+.02*A_ScreenWidth,foundY+.13*A_ScreenHeight]
         
 }
 
 ShopOpen(){
-    ErrorLevel := !ImageSearch(&shopX, &shopY, 0, 0, A_ScreenWidth, A_ScreenHeight, "*10 shop_flag.PNG")
-    if !ErrorLevel
-        return [shopX, shopY]
+    ok := ImageSearch(&foundX, &foundY, this.X1, this.Y1, this.X2, this.Y2, "*10 " this.ImagesFolder "\shop_flag.PNG")
+    if ok
+        return [foundX, foundY]
 }
 
 ExitArena(){
-    ErrorLevel := !ImageSearch(&ExitArenaX, &ExitArenaY, 0, 0, A_ScreenWidth, A_ScreenHeight, "*10 arena_exit.PNG")
-    if !ErrorLevel {
-        DllCall("SetCursorPos", "int", ExitArenaX, "int", ExitArenaY)
+    ok := ImageSearch(&foundX, &foundY, this.X1, this.Y1, this.X2, this.Y2, "*10 " this.ImagesFolder "\arena_exit.PNG")
+    if ok {
+        DllCall("SetCursorPos", "int", foundX, "int", foundY)
         Click
         Sleep(10000)
     }
 }
 
 IsDead(){
-    ErrorLevel := !ImageSearch(&isDeadX, &isDeadY, 0, 0, A_ScreenWidth, A_ScreenHeight, "*5 death_flag.PNG")
-    if !ErrorLevel
+    ok := ImageSearch(&foundX, &foundY, this.X1, this.Y1, this.X2, this.Y2, "*5 " this.ImagesFolder "\death_flag.PNG")
+    if ok
         return True
 }
 
 IsPickingChamp(){
-    ErrorLevel := !ImageSearch(&isPickingChampX, &isPickingChampY, 0, 0, A_ScreenWidth, A_ScreenHeight, "inactive_lock.PNG")
-        if !Errorlevel
+    ok := ImageSearch(&foundX, &foundY, this.X1, this.Y1, this.X2, this.Y2, this.ImagesFolder "\inactive_lock.PNG")
+        if ok
             return True
 }
 
 AcceptQueue(){
-    ErrorLevel := !ImageSearch(&AcceptQueueX, &AcceptQueueY, 0, 0, A_ScreenWidth, A_ScreenHeight, "match_found.PNG")
-        if !Errorlevel {
-            Click(AcceptQueueX ", " AcceptQueueY)
+    ok := ImageSearch(&foundX, &foundY, this.X1, this.Y1, this.X2, this.Y2, this.ImagesFolder "\match_found.PNG")
+        if ok {
+            Click(foundX ", " foundY)
             MouseMove(0, 0)
         }
 }
 
 CloseFeedback(){
-    ErrorLevel := !ImageSearch(&CloseFeedbackX, &CloseFeedbackY, 0, 0, A_ScreenWidth, A_ScreenHeight, "close_feedback.PNG")
-        if !Errorlevel {
-            Click(CloseFeedbackX ", " CloseFeedbackY)
+    ok := ImageSearch(&foundX, &foundY, this.X1, this.Y1, this.X2, this.Y2, this.ImagesFolder "\close_feedback.PNG")
+        if ok {
+            Click(foundX ", " foundY)
         }
+}
+
 }

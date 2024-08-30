@@ -1,18 +1,9 @@
-; InstallKeybdHook()
-; InstallMouseHook()
-; #UseHook True
-; CoordMode("Pixel", "Window")
-; CoordMode("Mouse", "Window")
-; SendMode("Event")
-; SetMouseDelay(1)
-; SetDefaultMouseSpeed(0)
-; #Warn All, Off
-#SingleInstance force
 #Include <FindText>
-SetWorkingDir(A_ScriptDir "\assetsTEST")
-Home::Test()
+#Include <Simulator>
+Home::TestSim()
+;SetWorkingDir(A_ScriptDir "\assetsTEST")
 
-Test(){
+TestScreenshot(){
     FindText().Screenshot(100,100,500,500) ; Take a new screenshot between coordinates 100,100 and 500,500
     FindText().ShowScreenShot(100, 100,500, 500, 0) ; Shows the taken screenshot on the screen. Since we specified 0 as the last argument, the function will use the screenshot taken previously by the Screenshot function.
     Sleep 3000
@@ -63,20 +54,3 @@ ShopOpen2(){
     ; ok:=FindText(&X:="wait", &Y:=3, 0,0,0,0,0,0,Text)  ; Wait 3 seconds for appear
     ; ok:=FindText(&X:="wait0", &Y:=-1, 0,0,0,0,0,0,Text)  ; Wait indefinitely for disappear
 }
-
-TimeTest(){
-    NumRuns := 100
-    TotalRuntime := 0
-    loop NumRuns {
-        StartTime := A_TickCount
-        ;RUN FUNCTION HERE
-        /*****************/
-        ShopOpen2()
-        /*****************/
-        TotalRuntime := TotalRuntime + (A_TickCount - StartTime)
-    }
-    MsgBox "Total Time: " TotalRuntime " ms"
-        .  "`n`nAverage Time: " TotalRuntime / NumRuns " ms"
-}
-
-
