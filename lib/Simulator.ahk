@@ -36,7 +36,7 @@ class Simulator {
         this.ImageFinder := ImageFinder()
     
         ; Load config file
-        infile := FileOpen(A_ScriptDir "\config\controls.cfg", "r")
+        infile := FileOpen(A_ScriptDir "\config.cfg", "r")
         if (!infile) {
             MsgBox("Error reading config file.")
             return
