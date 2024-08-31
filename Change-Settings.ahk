@@ -27,10 +27,12 @@ configMap["Recall"] := "b"
 configMap["Champion name"] := " "
 defaultMap := configMap.Clone()
 
+/*
 ; Add general settings
 MyGui.Add("Text", "r2", "GENERAL")
 myGui.add("text", "xm r1 w130", "Surrender?")
 MyGui.Add("CheckBox", "vSurrender", "Always Surrender?")
+*/
 
 ; Add controls
 MyGui.Add("Text", "r2", "CONTROLS")

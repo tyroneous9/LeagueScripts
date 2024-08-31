@@ -1,79 +1,71 @@
-﻿SetWorkingDir(A_ScriptDir "\resources")
-#Include "BotUtil\ImageFinder.ahk"
-#Include "BotUtil\BehaviorLib.ahk"
-#Include "BotUtil\Settings.ahk"
+﻿#Include <Simulator>
 
 /*
 -------------------------------
-        Initialization
--------------------------------
-*/
-
-LoadScript()
-;Constants
-global MAX_ORDER := ["r", "q", "w", "e"]
-global CAST_ORDER := [SPELL_4, SPELL_3, SPELL_2, SPELL_1]
-global ACTIVE_RANGE := 500
-
-/*
--------------------------------
-      Game & Client Loop
+          Functions
 -------------------------------
 */
 
 RunGame() {
-	static loaded := false
-	if (WinActive(CLIENT_PROCESS)) {
-		if (loaded == true) {
-			Sleep(10000)
-			loaded := false
+    ;INIT
+	Sim := Simulator()
+    static loaded := false
+    MAX_ORDER := [Sim.SPELL_4,Sim.SPELL_1,Sim.SPELL_2,Sim.SPELL_3]
+    CAST_ORDER := [Sim.SPELL_4,Sim.SPELL_1,Sim.SPELL_2,Sim.SPELL_3]
+	SELECT_ALLY_ARR := [Sim.SELECT_ALLY_1, Sim.SELECT_ALLY_2, Sim.SELECT_ALLY_3, Sim.SELECT_ALLY_4]
+    ACTIVE_RANGE := 500
+	static AllyCurrent := 0
+	
+    ;START LOOP
+    loop {
+
+	if (!WinActive(Sim.GAME_PROCESS)) { ; GAME DOWN
+		if (WinActive(Sim.CLIENT_PROCESS)) { ; CLIENT UP
+			Sim.RunClient(Sim.CHAMPION)
+			continue
+		} else { ; CLIENT DOWN
+			while (!WinActive(Sim.GAME_PROCESS) && !WinActive(Sim.CLIENT_PROCESS)) { ; Start/exit phase
+				Sleep(1000)
+			}
 		}
-		RunClient()
-		return
-	} else if (loaded == false) {
-		Sleep(10000)
-		loaded := True
 	}
 
-	; Shop/level
+	;Shop phase
 	if (IsDead()) {
 		BuyRecommended()
-		LevelUp(MAX_ORDER) 
-		Surrender()
-	}
-
-	; Combat
-	static AllyCurrent := 0
-	; determine ally presence
-	AllyPosXY := FindAllyXY()
-	if (AllyPosXY) { ; ally
-		; determine enemy proximity
-		Send("{" CENTER_CAMERA " down}")
-		Sleep(10)
-		if (EnemyPosXY := FindEnemyXY()) {
-			EnemyDistance := GetDistance(SCREEN_CENTER, EnemyPosXY)
-			; attack if close
-			if (EnemyDistance < ACTIVE_RANGE) {
-				AttackEnemy(CAST_ORDER, &EnemyPosXY)
-			}
-		} else { ; look for ally
-			num := Random(1, 4)
-			AllyCurrent := SELECT_ALLY_ARR[num]
-			Sleep(100)
+		loop 3 {
+			Sim.LevelUp(MAX_ORDER) 
 		}
-		Send("{" CENTER_CAMERA " up}")
+		Sim.Surrender()
+	}
+	
+	; Combat
+	AllyPosXY := FindAllyXY()
+	if (AllyPosXY) { ; ally found
+		if (EnemyPosXY := Sim.ImageFinder.FindEnemyXY()) { 
+			;move toward enemy if seen
+			Click(EnemyPosXY[1], EnemyPosXY[2], "R")
+			Send("{" Sim.CENTER_CAMERA " down}")
+			if (EnemyPosXY := Sim.ImageFinder.FindEnemyXY()) {
+				EnemyDistance := Sim.GetDistance(Sim.SCREEN_CENTER, EnemyPosXY)
+				if (EnemyDistance < ACTIVE_RANGE) {
+					Sim.AttackEnemy(CAST_ORDER, &EnemyPosXY)
+				}
+			}
+			Send("{" Sim.CENTER_CAMERA " up}")
+		} 
 	} else { ; look for ally
 		num := Random(1, 4)
 		AllyCurrent := SELECT_ALLY_ARR[num]
-		Sleep(400)
+		Sleep(100)
 	}
-	FollowAlly(AllyCurrent, 256)
+	FollowAlly(AllyCurrent, 250)
+
+    } ;END LOOP
 }
 
 RunTest() {
-	StartTime := A_TickCount
 
-	;MsgBox % A_TickCount - StartTime " milliseconds have elapsed."
 }
 
 /*
@@ -82,20 +74,21 @@ RunTest() {
 -------------------------------
 */
 
-;testing
-Ins::
-{ 
-RunTest() 
-return
-
-;run script
-} 
+;Run script
 Home::
 {
-Loop
-	RunGame()
+RunGame()
 return
 } 
+
+;Run script tests
+Ins::
+{ 
+RunTest()
+return
+} 
+
+;Stop script
 Del::ExitApp()
 End::Reload()
 

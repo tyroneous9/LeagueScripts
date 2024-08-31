@@ -278,11 +278,11 @@ BuyLegendaryAnvil() {
 }
 
 ;Follow ally based on SelectAlly key
-FollowAlly(ally, offset) {
-    Send("{" ally " down}")
+FollowAlly(ally_key, offset) {
+    Send("{" ally_key " down}")
     this.MoveCursorRandom(this.SCREEN_CENTER[1], this.SCREEN_CENTER[2], offset)
     Click("Right")
-    Send("{" ally " up}")
+    Send("{" ally_key " up}")
 }
 
 ;Attack enemy with specified cast order
