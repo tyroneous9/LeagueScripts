@@ -27,7 +27,13 @@ configMap["Recall"] := "b"
 configMap["Champion name"] := " "
 defaultMap := configMap.Clone()
 
-; Create GUI
+; Add general settings
+MyGui.Add("Text", "r2", "GENERAL")
+myGui.add("text", "xm r1 w130", "Surrender?")
+MyGui.Add("CheckBox", "vSurrender", "Always Surrender?")
+
+; Add controls
+MyGui.Add("Text", "r2", "CONTROLS")
 path := A_ScriptDir "\config.cfg"
 infile := FileOpen(path, "r")
 if (!infile) {
@@ -36,27 +42,27 @@ if (!infile) {
     infile := FileOpen(path, "r")
 }
 
-editsMap := Map()
+guiMap := Map()
 
 for key in configMap {
-    line := infile.ReadLine()
-    if (line) {
-        str := StrSplit(line, "=")[2]
+    text := infile.ReadLine()
+    if (text) {
+        str := StrSplit(text, "=")[2]
         str := StrSplit(str, "`n")[1]
         configMap[key] := str
     } else {
         configMap[key] := defaultMap[key]
     }
     myGui.add("text", "xm r1 w130", key)
-    editLine := myGui.add("edit", "x+m r1 w130 lowercase", configMap[key])
-    editsMap[key] := editLine
+    line := myGui.add("edit", "x+m r1 w130 lowercase", configMap[key])
+    guiMap[key] := line
 }
 infile.Close()
 
 ogcbuttonDefault := myGui.add("button", "xm r1", "Default")
-ogcbuttonDefault.OnEvent("Click", Default.Bind(editsMap, defaultMap))
+ogcbuttonDefault.OnEvent("Click", Default.Bind(guiMap, defaultMap))
 ogcbuttonSave := myGui.add("button", "x+m r1", "Save")
-ogcbuttonSave.OnEvent("Click", Save.Bind(editsMap, configMap, path))
+ogcbuttonSave.OnEvent("Click", Save.Bind(guiMap, configMap, path))
 myGui.Title := "Settings"
 myGui.show()
 return
@@ -66,18 +72,18 @@ GuiClose(*) {
     return
 }
 
-Default(editsMap, defaultMap, *) {
-    for key, editLine in editsMap {
-        editLine.Text := defaultMap[key]
+Default(guiMap, defaultMap, *) {
+    for key, line in guiMap {
+        line.Text := defaultMap[key]
     }
     return
 }
 
-Save(editsMap, configMap, path, *) {
+Save(guiMap, configMap, path, *) {
     infile := FileOpen(path, "w")
-    for key, editLine in editsMap {
+    for key, line in guiMap {
         OmitChars := "`r`n "
-        currentInput := RTrim(editLine.Text, OmitChars)
+        currentInput := RTrim(line.Text, OmitChars)
         writeLine := Format("{1}={2}", key, currentInput)
         infile.WriteLine(writeLine)
     }
