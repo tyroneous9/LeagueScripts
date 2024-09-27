@@ -1,13 +1,14 @@
-﻿#Include "BotUtil\ImageFinder.ahk"
-#Include "BotUtil\Settings.ahk"
+﻿#Include <ImageFinder>
+#Include <Settings>
 #SingleInstance force
 
+finder := ImageFinder()
 Loop{
 	if(WinExist("League of Legends (TM) Client")) {
 		Sleep(10000)
 	}
 	else {
-		AcceptQueue()
+		finder.AcceptQueue()
 		Sleep(1000)
 	}
 }

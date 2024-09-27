@@ -10,8 +10,6 @@ RunGame() {
     ;INIT
 	Sim := Simulator()
     static loaded := false
-    MAX_ORDER := [Sim.SPELL_4,Sim.SPELL_1,Sim.SPELL_2,Sim.SPELL_3]
-    CAST_ORDER := [Sim.SPELL_4,Sim.SPELL_1,Sim.SPELL_2,Sim.SPELL_3]
     ACTIVE_RANGE := 550
 	
     ;START LOOP
@@ -37,7 +35,7 @@ RunGame() {
         Sleep(500)
         Sim.BuyRecommended()
 		loop 3 {
-			Sim.LevelUp(MAX_ORDER) 
+			Sim.LevelUp() 
 		}
 		;Sim.Surrender()  ;TURN THIS ON IF DUO
 	}
@@ -50,7 +48,7 @@ RunGame() {
 		if (EnemyPosXY := Sim.ImageFinder.FindEnemyXY()) {
 			EnemyDistance := Sim.GetDistance(Sim.SCREEN_CENTER, EnemyPosXY)
 			if (EnemyDistance < ACTIVE_RANGE) {
-				Sim.AttackEnemy(CAST_ORDER, &EnemyPosXY)
+				Sim.AttackEnemy(&EnemyPosXY)
 			}
 		}
 		Send("{" Sim.CENTER_CAMERA " up}")

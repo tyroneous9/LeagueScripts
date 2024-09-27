@@ -8,7 +8,8 @@ class Simulator {
         this.CHAMPION := ""
         this.SCREEN_CENTER := [A_ScreenWidth / 2, (A_ScreenHeight / 2) - 10]
         this.CLIENT_PROCESS := "ahk_exe LeagueClientUx.exe"
-        this.GAME_PROCESS := "League of Legends (TM) Client"
+        this.GAME_PROCESS := "ahk_exe League of Legends.exe"
+        this.CLIENT_CLASSNN := "Chrome_RenderWidgetHostHWND1"
         
         ; Controls
         this.CENTER_CAMERA := ""
@@ -31,9 +32,6 @@ class Simulator {
         this.SPELL_4 := ""
         this.SUM_1 := ""
         this.SUM_2 := ""
-        
-        ; Other
-        this.ImageFinder := ImageFinder()
     
         ; Load config file
         infile := FileOpen(A_ScriptDir "\config.cfg", "r")
@@ -95,6 +93,11 @@ class Simulator {
                 }
             }
         }
+
+        ; Post config properties
+        this.ImageFinder := ImageFinder()
+        this.MAX_ORDER := [this.SPELL_4,this.SPELL_1,this.SPELL_2,this.SPELL_3]
+        this.CAST_ORDER := [this.SPELL_4,this.SPELL_1,this.SPELL_2,this.SPELL_3]
     }    
 
 /*
@@ -107,42 +110,33 @@ class Simulator {
 RunClient(champName := "") {
     if this.ImageFinder.IsPickingChamp() {
         while (this.ImageFinder.IsPickingChamp() == True) {
-            this.MousePercentMove(60, 14, this.CLIENT_PROCESS) ;search bar
-            Click("left")
+            this.ClientClick(60, 14) ;search bar
             Sleep(500)
-            this.MousePercentMove(30, 22, this.CLIENT_PROCESS) ;random champ icon
-            Click("left")
+            this.ClientClick(30, 22) ;random champ icon
             Sleep(500)
-            this.MousePercentMove(60, 14, this.CLIENT_PROCESS) ;search bar
-            Click("left")
+            this.ClientClick(60, 14) ;search bar
             Send(champName)
             Sleep(500)
-            this.MousePercentMove(30, 22, this.CLIENT_PROCESS) ;user champ icon
-            Click("left")
+            this.ClientClick(30, 22) ;user champ icon
             Sleep(500)
-            this.MousePercentMove(50, 85, this.CLIENT_PROCESS) ;lock in
-            Click("Left")
+            this.ClientClick(50, 85) ;lock in
             Sleep(500)
         }
     } else {
-        this.MousePercentMove(46, 95, this.CLIENT_PROCESS)
-        Click("left")
-        this.MousePercentMove(50, 78, this.CLIENT_PROCESS) 
-        Click("left")
+        this.ClientClick(46, 95) ;find match
+        this.ClientClick(50, 78) ;accept queue
         Sleep(1000)
         this.ImageFinder.CloseFeedback()
     }
 }
 
 ;Move mouse % window distance
-MousePercentMove(xPercent, yPercent, window) {
-    if (!WinActive(window)) {
-        Sleep 1000
-    } else {
-        WinGetPos(&X, &Y, &W, &H, window)
+ClientClick(xPercent, yPercent) {
+    if (WinActive(this.CLIENT_PROCESS)) {
+        WinGetPos(&X, &Y, &W, &H, this.CLIENT_PROCESS)
         xFlat := W*1/100*xPercent
         yFlat := H*1/100*yPercent
-        MouseMove(xFlat, yFlat)
+        ControlClick(this.CLIENT_CLASSNN, this.CLIENT_PROCESS,,,,"x" xFlat "y" yFlat)
     }
 }
 
@@ -177,34 +171,23 @@ MoveCursorRandom(x, y, offset) {
     DllCall("SetCursorPos", "int", RandX, "int", RandY)
 }
 
-;Pan camera some distance toward (x,y)
-PanCameraToward(x, y) {
-    xKey := (x < this.SCREEN_CENTER[1]) ? this.SCROLL_CAM_ARR[3] : this.SCROLL_CAM_ARR[4]
-    yKey := (y < this.SCREEN_CENTER[2]) ? this.SCROLL_CAM_ARR[1] : this.SCROLL_CAM_ARR[2]
-    Send("{" xKey " down}")
-    Send("{" yKey " down}")
-    Sleep(250)
-    Send("{" xKey " up}")
-    Send("{" yKey " up}")
-}
-
 GetDistance(point1, point2) {
     return Sqrt((point1[1] - point2[1])**2 + (point1[2] - point2[2])**2)
 }
 
 ;Level all four abilities
-LevelUp(MAX_ORDER) {
+LevelUp() {
     Send("{" this.HOLD_TO_LEVEL " down}")
-    if(!MAX_ORDER) {
+    if(!this.MAX_ORDER) {
         Send(this.SPELL_4)
         Send(this.SPELL_1)
         Send(this.SPELL_2)
         Send(this.SPELL_3)
     } else {
-        Send(MAX_ORDER[1])
-        Send(MAX_ORDER[2])
-        Send(MAX_ORDER[3])
-        Send(MAX_ORDER[4])
+        Send(this.MAX_ORDER[1])
+        Send(this.MAX_ORDER[2])
+        Send(this.MAX_ORDER[3])
+        Send(this.MAX_ORDER[4])
     }
     Send("{" this.HOLD_TO_LEVEL " up}")
 }
@@ -286,11 +269,11 @@ FollowAlly(ally_key, offset) {
 }
 
 ;Attack enemy with specified cast order
-AttackEnemy(CAST_ORDER, &EnemyPosXY) {
+AttackEnemy(&EnemyPosXY) {
     Click("Right")
-    Loop CAST_ORDER.Length {
+    Loop this.CAST_ORDER.Length {
         DllCall("SetCursorPos", "int", EnemyPosXY[1], "int", EnemyPosXY[2])
-        ability := CAST_ORDER[A_Index]
+        ability := this.CAST_ORDER[A_Index]
         Send(ability)
     }
     Send("{" this.ITEM_1 "}")
@@ -324,7 +307,7 @@ AttemptRecall() {
     while (!this.ImageFinder.FindEnemyXY() && !this.ImageFinder.FindAllyXY()) {
         if (A_TickCount - startTime > 9000) {
             this.BuyRecommended()
-            this.LevelUp(MAX_ORDER)
+            this.LevelUp()
             return true
         }
     }
@@ -363,9 +346,9 @@ TimeTest() {
 
 ; Checks image found + info
 ImageFound(searchResult) {
+    t1 := A_TickCount
     MsgBox "Found:`t" (IsObject(searchResult)?searchResult.Length:searchResult)
       . "`n`nTime:`t" (A_TickCount - t1) " ms"
-      . "`n`nPos:`t" foundX ", " foundY
       . "`n`nResult:`t<" (IsObject(searchResult)?searchResult[1].id:"") ">", "Tip", 4096
 }
 
