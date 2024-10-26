@@ -19,6 +19,8 @@ RunGame() {
 
 	if (!WinActive(Sim.GAME_PROCESS)) { ; GAME DOWN
 		; Attempt to activate game
+		if(WinExist(Sim.CLIENT_PROCESS))
+			WinActivate(Sim.CLIENT_PROCESS)
 		if (WinActive(Sim.CLIENT_PROCESS)) { ; CLIENT UP
 			Sim.RunClient(Sim.CHAMPION)
 			continue
