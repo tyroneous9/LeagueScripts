@@ -18,15 +18,15 @@ RunGame() {
     loop {
 
 	if (!WinActive(Sim.GAME_PROCESS)) { ; GAME DOWN
-		; Attempt to activate game
+		; LOOK FOR GAME
 		if(WinExist(Sim.CLIENT_PROCESS))
 			WinActivate(Sim.CLIENT_PROCESS)
-		if (WinActive(Sim.CLIENT_PROCESS)) { ; CLIENT UP
+		if (WinActive(Sim.CLIENT_PROCESS)) { ; CLIENT ACTIVE
 			Sim.RunClient(Sim.CHAMPION)
 			continue
-		} else { ; CLIENT DOWN
+		} else {
 			while (!WinActive(Sim.GAME_PROCESS) && !WinActive(Sim.CLIENT_PROCESS)) { ; Transition phase
-				if(WinExist(Sim.GAME_PROCESS))
+				if(WinExist(Sim.GAME_PROCESS)) ; ACTIVATE GAME
 					WinActivate(Sim.GAME_PROCESS)
 				Sleep(1000)
 			}
