@@ -11,16 +11,21 @@ RunGame() {
 	Sim := Simulator()
     static loaded := false
     ACTIVE_RANGE := 550
-	
-    ;START LOOP
-    loop {
 
+    ;START GAME LOOP
+    loop {
+	
 	if (!WinActive(Sim.GAME_PROCESS)) { ; GAME DOWN
-		if (WinActive(Sim.CLIENT_PROCESS)) { ; CLIENT UP
+		; LOOK FOR GAME
+		if(WinExist(Sim.CLIENT_PROCESS))
+			WinActivate(Sim.CLIENT_PROCESS)
+		if (WinActive(Sim.CLIENT_PROCESS)) { ; CLIENT ACTIVE
 			Sim.RunClient(Sim.CHAMPION)
 			continue
-		} else { ; CLIENT DOWN
-			while (!WinActive(Sim.GAME_PROCESS) && !WinActive(Sim.CLIENT_PROCESS)) { ; Start/exit phase
+		} else {
+			while (!WinActive(Sim.GAME_PROCESS) && !WinActive(Sim.CLIENT_PROCESS)) { ; Transition phase
+				if(WinExist(Sim.GAME_PROCESS)) ; ACTIVATE GAME
+					WinActivate(Sim.GAME_PROCESS)
 				Sleep(1000)
 			}
 		}
@@ -64,7 +69,11 @@ RunGame() {
 }
 
 RunTest() {
-
+	Sim := Simulator()
+	loop {
+		Sim.RunClient()
+	}
+	
 }
 
 /*

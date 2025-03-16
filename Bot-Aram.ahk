@@ -14,7 +14,7 @@ RunGame() {
     ACTIVE_RANGE := 500
 	static AllyCurrent := 0
 	
-    ;START LOOP
+    ;START GAME LOOP
     loop {
 
 	if (!WinActive(Sim.GAME_PROCESS)) { ; GAME DOWN
