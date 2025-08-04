@@ -13,7 +13,7 @@ TestImageFinder() {
     if (image := this.ShopOpen())
         MouseMove(image[1], image[2])
     else 
-        msgbox "not found"
+        msgbox "test image not found"
 }
 
 FindPlayerXY(){
@@ -58,8 +58,8 @@ IsDead(){
 
 IsPickingChamp(){
     ok := ImageSearch(&foundX, &foundY, this.X1, this.Y1, this.X2, this.Y2, this.ImagesFolder "\inactive_lock.PNG")
-        if ok
-            return True
+    if ok
+        return True
 }
 
 AcceptQueue(){
@@ -76,5 +76,7 @@ CloseFeedback(){
             Click(foundX ", " foundY)
         }
 }
+
+
 
 }

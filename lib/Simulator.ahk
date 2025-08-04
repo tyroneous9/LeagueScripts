@@ -136,7 +136,9 @@ ClientClick(xPercent, yPercent) {
         WinGetPos(&X, &Y, &W, &H, this.CLIENT_PROCESS)
         xFlat := W*1/100*xPercent
         yFlat := H*1/100*yPercent
+        MouseMove xFlat, yFlat
         ControlClick(this.CLIENT_CLASSNN, this.CLIENT_PROCESS,,,,"x" xFlat "y" yFlat)
+        Sleep 100
     }
 }
 

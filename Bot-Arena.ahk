@@ -11,14 +11,15 @@ RunGame() {
 	Sim := Simulator()
     static loaded := false
     ACTIVE_RANGE := 550
-
     ;START GAME LOOP
     loop {
 	
 	if (!WinActive(Sim.GAME_PROCESS)) { ; GAME DOWN
 		; LOOK FOR GAME
-		if(WinExist(Sim.CLIENT_PROCESS))
+		if(WinExist(Sim.CLIENT_PROCESS)) {
 			WinActivate(Sim.CLIENT_PROCESS)
+		}
+			
 		if (WinActive(Sim.CLIENT_PROCESS)) { ; CLIENT ACTIVE
 			Sim.RunClient(Sim.CHAMPION)
 			continue
@@ -85,6 +86,8 @@ RunTest() {
 ;Run script
 Home::
 {
+msgbox "Script started"
+Sleep 500
 RunGame()
 return
 } 
